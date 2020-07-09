@@ -85,7 +85,7 @@ class Map extends Component<Props, State> {
             source="states"
             paint={{
               "line-color": "#627BC1",
-              "line-width": 2,
+              "line-width": 1,
             }}
           />
         </Source>
