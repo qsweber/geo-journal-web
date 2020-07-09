@@ -41,7 +41,7 @@ class Map extends Component<Props, State> {
         }
         {...this.state.viewport}
         onLoad={(event: MapLoadEvent) => {
-          this.setState({ map: event.target });
+          this.setState({ map: event.target }); // is there a better way to do this?
         }}
         onHover={(event: PointerEvent) => {
           if (event.features) {
@@ -49,8 +49,6 @@ class Map extends Component<Props, State> {
               (feature) => feature.layer.id === "state-fills"
             );
             if (stateFeature) {
-              console.log(stateFeature);
-              console.log(event);
               this.state.map?.setFeatureState(stateFeature, { qsw: true });
             }
           }
