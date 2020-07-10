@@ -5,6 +5,7 @@ export async function getLatLong(
 ): Promise<{ latitude: number; longitude: number }> {
   return new Promise((resolve, _reject) => {
     EXIF.getData(file as any, function () {
+      //@ts-ignore
       const exifData = this.exifdata;
       const latitudeComponents: number[] = exifData.GPSLatitude;
       const latitudeRef: "N" | "S" = exifData.GPSLatitudeRef;
