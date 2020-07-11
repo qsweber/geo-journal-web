@@ -7,6 +7,7 @@ export async function getLatLong(
     EXIF.getData(file as any, function () {
       //@ts-ignore
       const exifData = this.exifdata;
+      console.log(exifData);
       const latitudeComponents: number[] = exifData.GPSLatitude;
       const latitudeRef: "N" | "S" = exifData.GPSLatitudeRef;
       const longitudeComponents: number[] = exifData.GPSLongitude;

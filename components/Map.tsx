@@ -6,6 +6,7 @@ import ReactMapGL, {
   PointerEvent,
   Source,
   Layer,
+  Marker,
 } from "react-map-gl";
 
 interface State {
@@ -15,8 +16,17 @@ interface State {
 }
 
 interface Props {
-  stateNames: string[];
+  states: { stateName: string; latitude: number; longitude: number }[];
 }
+
+const imgStyle = {
+  backgroundImage: "url('/mapbox-icon.png')",
+  backgroundSize: "cover",
+  width: "50px",
+  height: "50px",
+  borderRadius: "50%",
+  cursor: "pointer",
+};
 
 class Map extends Component<Props, State> {
   state: State = {
@@ -70,12 +80,12 @@ class Map extends Component<Props, State> {
                 [
                   "in",
                   ["get", "STATE_NAME"],
-                  ["literal", this.props.stateNames],
+                  ["literal", this.props.states.map((s) => s.stateName)],
                 ],
-                1,
+                0.3,
                 ["boolean", ["feature-state", "qsw"], false],
-                0.75,
-                0.5,
+                0,
+                0,
               ],
             }}
           />
@@ -88,6 +98,16 @@ class Map extends Component<Props, State> {
               "line-width": 1,
             }}
           />
+          {this.props.states.map((state) => (
+            <Marker
+              latitude={state.latitude}
+              longitude={state.longitude}
+              offsetLeft={-25}
+              offsetTop={-25}
+            >
+              <div style={imgStyle}></div>
+            </Marker>
+          ))}
         </Source>
       </ReactMapGL>
     );

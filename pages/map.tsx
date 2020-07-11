@@ -10,8 +10,13 @@ const DynamicComponentWithNoSSR = dynamic(() => import("../components/Map"), {
 });
 
 export default () => {
+  const initialState = {
+    stateName: "Washington",
+    latitude: 47,
+    longitude: -122,
+  };
   const [typedStateName, setTypedStateName] = useState("");
-  const [finalStateNames, setFinalStateNames] = useState([""]);
+  const [finalStateNames, setFinalStateNames] = useState([initialState]);
   return (
     <Layout>
       <input
@@ -19,11 +24,15 @@ export default () => {
         value={typedStateName}
         onChange={(event) => setTypedStateName(event.target.value)}
       />
+      <br />
       <input
         type="submit"
         value="Submit"
         onClick={async (event) => {
-          setFinalStateNames([...finalStateNames, typedStateName]);
+          setFinalStateNames([
+            ...finalStateNames,
+            { stateName: typedStateName, latitude: 40, longitude: -117 },
+          ]);
           event.preventDefault();
         }}
       />
@@ -41,7 +50,10 @@ export default () => {
                 for (let context of feature.context) {
                   if ((context.id as string).startsWith("region")) {
                     const uploadedState = context.text as string;
-                    setFinalStateNames([...finalStateNames, uploadedState]);
+                    setFinalStateNames([
+                      ...finalStateNames,
+                      { stateName: uploadedState, ...coordinates },
+                    ]);
                     break;
                   }
                 }
@@ -50,9 +62,9 @@ export default () => {
           }
         }}
       />
-      <DynamicComponentWithNoSSR
-        stateNames={["Alaska", "Texas", ...finalStateNames]}
-      />
+      <br />
+      <span>{`${finalStateNames.length - 1} / 50`}</span>
+      <DynamicComponentWithNoSSR states={finalStateNames.slice(1)} />
     </Layout>
   );
 };
