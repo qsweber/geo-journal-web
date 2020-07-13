@@ -16,16 +16,18 @@ interface State {
 }
 
 interface Props {
-  states: { stateName: string; latitude: number; longitude: number }[];
+  images: Image[];
+}
+
+export interface Image {
+  stateName: string;
+  latitude: number;
+  longitude: number;
+  file: File;
 }
 
 const imgStyle = {
-  backgroundImage: "url('/mapbox-icon.png')",
-  backgroundSize: "cover",
   width: "50px",
-  height: "50px",
-  borderRadius: "50%",
-  cursor: "pointer",
 };
 
 class Map extends Component<Props, State> {
@@ -80,7 +82,7 @@ class Map extends Component<Props, State> {
                 [
                   "in",
                   ["get", "STATE_NAME"],
-                  ["literal", this.props.states.map((s) => s.stateName)],
+                  ["literal", this.props.images.map((i) => i.stateName)],
                 ],
                 0.3,
                 ["boolean", ["feature-state", "qsw"], false],
@@ -89,23 +91,14 @@ class Map extends Component<Props, State> {
               ],
             }}
           />
-          <Layer
-            id="state-borders"
-            type="line"
-            source="states"
-            paint={{
-              "line-color": "#627BC1",
-              "line-width": 1,
-            }}
-          />
-          {this.props.states.map((state) => (
+          {this.props.images.map((image) => (
             <Marker
-              latitude={state.latitude}
-              longitude={state.longitude}
+              latitude={image.latitude}
+              longitude={image.longitude}
               offsetLeft={-25}
               offsetTop={-25}
             >
-              <div style={imgStyle}></div>
+              <img style={imgStyle} src={URL.createObjectURL(image.file)} />
             </Marker>
           ))}
         </Source>
