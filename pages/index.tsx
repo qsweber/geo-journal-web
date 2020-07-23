@@ -53,29 +53,31 @@ const getMapSection = (
   setImages: (images: Image[]) => void
 ) => (
   <div>
-    <input
-      type="file"
-      multiple
-      onChange={async (event) => {
-        if (event.target.files) {
-          const fileList = event.target.files;
-          const newImages: Image[] = [];
-          for (let i = 0; i < fileList.length; i++) {
-            const file = fileList.item(i);
-            if (file) {
-              const coordinates = await getLatLong(file);
-              newImages.push({
-                stateName: await mapbox.getStateFromCoordinates(coordinates),
-                ...coordinates,
-                file,
-              });
+    <div style={{ paddingBottom: 8 }}>
+      <input
+        type="file"
+        multiple
+        onChange={async (event) => {
+          if (event.target.files) {
+            const fileList = event.target.files;
+            const newImages: Image[] = [];
+            for (let i = 0; i < fileList.length; i++) {
+              const file = fileList.item(i);
+              if (file) {
+                const coordinates = await getLatLong(file);
+                newImages.push({
+                  stateName: await mapbox.getStateFromCoordinates(coordinates),
+                  ...coordinates,
+                  file,
+                });
+              }
             }
+            setImages([...images, ...newImages]);
           }
-          setImages([...images, ...newImages]);
-        }
-      }}
-    />
-    <span>{`${new Set(images).size} / 50`}</span>
+        }}
+      />
+      <span>{`States you've been to: ${new Set(images).size} / 50`}</span>
+    </div>
     <DynamicComponentWithNoSSR images={images} />
   </div>
 );

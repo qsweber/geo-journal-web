@@ -9,7 +9,7 @@ interface Props {
 }
 
 const Auth = (props: Props) => {
-  const [mode, setMode] = useState<"login" | "signup" | "verify">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "verify">("signup");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
@@ -34,6 +34,7 @@ const Auth = (props: Props) => {
     <div>
       <select
         value={mode}
+        style={{ marginRight: 8 }}
         onChange={(event) => setMode(event.target.value as any)}
       >
         <option value="login">Login</option>
@@ -48,12 +49,14 @@ const Auth = (props: Props) => {
       <input
         type="password"
         placeholder="password"
+        style={{ marginLeft: 8 }}
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
       <input
         type="submit"
         value="Submit"
+        style={{ marginLeft: 8 }}
         onClick={async () => {
           if (mode === "login") {
             await cognitoClient.authenticateUser(username, password);
@@ -65,7 +68,7 @@ const Auth = (props: Props) => {
         }}
       />
       {mode === "verify" ? (
-        <div>
+        <div style={{ marginTop: 8 }}>
           <input
             type="text"
             value={verificationCode}
@@ -74,6 +77,7 @@ const Auth = (props: Props) => {
           <input
             type="submit"
             value="Verification Code"
+            style={{ marginLeft: 8 }}
             onClick={async () => {
               await cognitoClient.confirmRegistration(
                 username,
