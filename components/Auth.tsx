@@ -12,7 +12,9 @@ const Auth = (props: Props) => {
   const [mode, setMode] = useState<"login" | "signup" | "verify">("signup");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
+  const [error2, setError2] = useState("");
 
   if (!!props.loggedInUser) {
     return (
@@ -35,7 +37,10 @@ const Auth = (props: Props) => {
       <select
         value={mode}
         style={{ marginRight: 8 }}
-        onChange={(event) => setMode(event.target.value as any)}
+        onChange={(event) => {
+          setMode(event.target.value as any);
+          setError("");
+        }}
       >
         <option value="login">Login</option>
         <option value="signup">Signup</option>
@@ -58,15 +63,22 @@ const Auth = (props: Props) => {
         value="Submit"
         style={{ marginLeft: 8 }}
         onClick={async () => {
+          setError("");
           if (mode === "login") {
             await cognitoClient.authenticateUser(username, password);
             location.reload();
           } else {
-            await cognitoClient.signUp(username, password);
+            try {
+              await cognitoClient.signUp(username, password);
+            } catch (err) {
+              setError(err.message);
+              return;
+            }
             setMode("verify");
           }
         }}
       />
+      <span style={{ color: "red", marginLeft: 8 }}>{error}</span>
       {mode === "verify" ? (
         <div style={{ marginTop: 8 }}>
           <input
@@ -79,14 +91,21 @@ const Auth = (props: Props) => {
             value="Verification Code"
             style={{ marginLeft: 8 }}
             onClick={async () => {
-              await cognitoClient.confirmRegistration(
-                username,
-                password,
-                verificationCode
-              );
+              setError2("");
+              try {
+                await cognitoClient.confirmRegistration(
+                  username,
+                  password,
+                  verificationCode
+                );
+              } catch (err) {
+                setError2(err.message);
+                return;
+              }
               location.reload();
             }}
           />
+          <span style={{ color: "red", marginLeft: 8 }}>{error2}</span>
         </div>
       ) : undefined}
     </div>
