@@ -6,7 +6,8 @@ import Layout from "../components/Layout";
 import { Image } from "../components/Map";
 import { getLatLong } from "../lib/exif";
 import MapboxClient from "../clients/mapbox";
-import { User, CognitoClient } from "../clients/cognito";
+import { CognitoClient } from "../clients/cognito";
+import { User } from "../interfaces";
 
 const DynamicComponentWithNoSSR = dynamic(() => import("../components/Map"), {
   ssr: false,
@@ -35,7 +36,7 @@ const IndexPage = () => {
   if (!isUser(result.data)) {
     return (
       <Layout loggedInUser={undefined}>
-        <p>Please log in</p>
+        <div />
       </Layout>
     );
   }
@@ -74,7 +75,6 @@ const getMapSection = (
         }
       }}
     />
-    <br />
     <span>{`${new Set(images).size} / 50`}</span>
     <DynamicComponentWithNoSSR images={images} />
   </div>

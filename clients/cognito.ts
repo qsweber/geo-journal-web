@@ -4,10 +4,7 @@ import {
   CognitoUser,
 } from "amazon-cognito-identity-js";
 
-export interface User {
-  id: string;
-  jwtToken: string;
-}
+import { User } from "../interfaces";
 
 export class CognitoClient {
   private readonly userPool: CognitoUserPool;

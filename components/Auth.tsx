@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { CognitoClient, User } from "../clients/cognito";
+import { CognitoClient } from "../clients/cognito";
+import { User } from "../interfaces";
 
 const cognitoClient = new CognitoClient();
 
@@ -13,10 +14,24 @@ const Auth = (props: Props) => {
   const [password, setPassword] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
 
-  console.log("16", props.loggedInUser);
+  if (!!props.loggedInUser) {
+    return (
+      <div style={{ float: "right" }}>
+        <span>{"User ID: " + props.loggedInUser.id + " "}</span>
+        <input
+          type="submit"
+          value="Sign Out"
+          onClick={() => {
+            cognitoClient.signOut();
+            location.reload();
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div>
-      {props.loggedInUser ? <p>{props.loggedInUser.id}</p> : undefined}
       <select
         value={mode}
         onChange={(event) => setMode(event.target.value as any)}
@@ -24,14 +39,15 @@ const Auth = (props: Props) => {
         <option value="login">Login</option>
         <option value="signup">Signup</option>
       </select>
-      <p>{mode}</p>
       <input
         type="text"
+        placeholder="email"
         value={username}
         onChange={(event) => setUsername(event.target.value)}
       />
       <input
-        type="text"
+        type="password"
+        placeholder="password"
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
@@ -64,20 +80,6 @@ const Auth = (props: Props) => {
                 password,
                 verificationCode
               );
-              location.reload();
-            }}
-          />
-        </div>
-      ) : undefined}
-
-      {!!props.loggedInUser ? (
-        <div>
-          {" "}
-          <input
-            type="submit"
-            value="Sign Out"
-            onClick={() => {
-              cognitoClient.signOut();
               location.reload();
             }}
           />
