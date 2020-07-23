@@ -9,11 +9,7 @@ type Props = {
   loggedInUser?: User;
 };
 
-const Layout = ({
-  children,
-  title = "This is the default title",
-  loggedInUser,
-}: Props) => {
+const Layout = ({ children, title = "State Tracker", loggedInUser }: Props) => {
   return (
     <div>
       <Head>
