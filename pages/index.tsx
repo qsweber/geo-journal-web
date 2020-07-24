@@ -18,6 +18,7 @@ const cognitoClient = new CognitoClient();
 
 async function getUser(): Promise<User | "not logged in"> {
   const result = await cognitoClient.checkForLoggedInUser();
+  console.log(JSON.stringify(result));
   return result || "not logged in";
 }
 
