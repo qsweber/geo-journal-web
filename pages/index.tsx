@@ -31,10 +31,6 @@ const IndexPage = () => {
   const [images, setImages] = useState<Image[]>([]);
   const result = useSWR("user", getInitialData);
 
-  if (!result.data && !result.error) {
-    return <p>Loading...</p>;
-  }
-
   return (
     <Layout loggedInUser={result.data?.user}>
       <div style={{ paddingBottom: 8 }}>
