@@ -18,7 +18,9 @@ const Layout = ({ children, title = "State Tracker", loggedInUser }: Props) => {
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
       </Head>
       <h1>State Tracker</h1>
-      <Auth loggedInUser={loggedInUser} />
+      <div style={{ float: "right" }}>
+        <Auth loggedInUser={loggedInUser} />
+      </div>
       {children}
     </div>
   );

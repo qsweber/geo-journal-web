@@ -34,8 +34,11 @@ export class CognitoClient {
     return new Promise<User>((resolve, reject) => {
       cognitoUser.authenticateUser(authenticationDetails, {
         onSuccess: (result) => {
-          const token = result.getIdToken().getJwtToken();
-          resolve({ id: cognitoUser.getUsername(), jwtToken: token });
+          resolve({
+            id: cognitoUser.getUsername(),
+            email: result.getIdToken().payload.email,
+            jwtToken: result.getIdToken().getJwtToken(),
+          });
         },
         onFailure: (err) => {
           reject(err);
@@ -59,10 +62,11 @@ export class CognitoClient {
           if (session.isValid() === false) {
             resolve(undefined);
           } else {
-            console.log("64", session);
+            console.log("64", session.getIdToken().payload.email);
             resolve({
               id: cognitoUser.getUsername(),
               jwtToken: session.getIdToken().getJwtToken(),
+              email: session.getIdToken().payload.email,
             });
           }
         }
