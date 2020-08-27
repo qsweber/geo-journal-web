@@ -2,6 +2,8 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import useSWR from "swr";
 
+import axios from "axios";
+
 import Layout from "../components/Layout";
 import { Image } from "../components/Map";
 import { getLatLong } from "../lib/exif";
@@ -17,14 +19,18 @@ const DynamicComponentWithNoSSR = dynamic(() => import("../components/Map"), {
 const mapbox = new MapboxClient();
 const cognitoClient = new CognitoClient();
 
-async function getInitialData(): Promise<{ user: User; images: Image[] }> {
+async function getInitialData(): Promise<{
+  api: ApiClient;
+  user: User;
+  images: Image[];
+}> {
   const user = await cognitoClient.checkForLoggedInUser();
   if (!user) {
     throw new Error("not logged in");
   }
   const api = new ApiClient(user);
   const images = await api.getImages();
-  return { user, images };
+  return { api, user, images };
 }
 
 const IndexPage = () => {
@@ -52,6 +58,18 @@ const IndexPage = () => {
                     ...coordinates,
                     file,
                   });
+                  if (result.data) {
+                    const presignStuff = await result.data.api.presign();
+                    const formData = new FormData();
+                    Object.keys(presignStuff.data).forEach((k) => {
+                      formData.append(k, presignStuff.data[k]);
+                    });
+                    formData.append("file", file);
+                    await fetch(presignStuff.url, {
+                      method: "POST",
+                      body: formData,
+                    });
+                  }
                 }
               }
               setImages([...images, ...newImages]);
