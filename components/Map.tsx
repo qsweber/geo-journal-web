@@ -23,7 +23,8 @@ export interface Image {
   stateName: string;
   latitude: number;
   longitude: number;
-  file: File;
+  imgSrc: string;
+  takenAt: Date;
 }
 
 const imgStyle = {
@@ -92,14 +93,15 @@ class Map extends Component<Props, State> {
                 ],
               }}
             />
-            {this.props.images.map((image) => (
+            {this.props.images.map((image, i) => (
               <Marker
                 latitude={image.latitude}
                 longitude={image.longitude}
                 offsetLeft={-25}
                 offsetTop={-25}
+                key={`${i}`}
               >
-                <img style={imgStyle} src={URL.createObjectURL(image.file)} />
+                <img style={imgStyle} src={image.imgSrc} />
               </Marker>
             ))}
           </Source>
