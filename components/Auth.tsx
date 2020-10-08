@@ -11,7 +11,7 @@ interface Props {
 }
 
 const Auth = (props: Props) => {
-  if (!!props.loggedInUser) {
+  if (props.loggedInUser) {
     return (
       <div>
         <span>{props.loggedInUser.email + " "}</span>

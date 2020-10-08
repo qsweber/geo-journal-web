@@ -13,9 +13,9 @@ export default class MapboxClient {
   }
 
   _getStateFromFeatures(features: any[]): string {
-    for (let feature of features) {
+    for (const feature of features) {
       if (feature.context) {
-        for (let context of feature.context) {
+        for (const context of feature.context) {
           if ((context.id as string).startsWith("region")) {
             return context.text as string;
           }

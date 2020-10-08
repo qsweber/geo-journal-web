@@ -1,4 +1,4 @@
-import { Component } from "react";
+import React, { Component } from "react";
 import { Map as BaseMap } from "mapbox-gl";
 import ReactMapGL, {
   ViewportProps,
@@ -15,16 +15,16 @@ interface State {
   map: BaseMap | undefined;
 }
 
-interface Props {
-  images: Image[];
-}
-
 export interface Image {
   stateName: string;
   latitude: number;
   longitude: number;
   imgSrc: string;
   takenAt: Date;
+}
+
+interface Props {
+  images: Image[];
 }
 
 const imgStyle = {

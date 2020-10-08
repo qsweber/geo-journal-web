@@ -2,7 +2,7 @@ import React from "react";
 
 import { User } from "../interfaces";
 import { Image } from "./Map";
-import { ApiClient, ImageMetadata } from "../clients/api";
+import { ApiClient } from "../clients/api";
 import MapboxClient from "../clients/mapbox";
 import { getLatLong } from "../lib/exif";
 
@@ -28,10 +28,23 @@ const ImageUpload = (props: Props) => {
         for (let i = 0; i < fileList.length; i++) {
           const file = fileList.item(i);
           if (file) {
-            const image = await getImageFromUploadedFile(props.mapbox, file);
+            const coordinates = await getLatLong(file);
+            const image = {
+              stateName: await props.mapbox.getStateFromCoordinates(
+                coordinates
+              ),
+              ...coordinates,
+              takenAt: new Date(file.lastModified),
+              imgSrc: URL.createObjectURL(file),
+            };
             newImages.push(image);
             if (props.api) {
-              await saveImage(file, image, props.api);
+              await props.api.saveImage(file, {
+                latitude: image.latitude,
+                longitude: image.longitude,
+                takenAt: new Date(file.lastModified),
+                name: file.name,
+              });
             }
           }
         }
@@ -40,42 +53,5 @@ const ImageUpload = (props: Props) => {
     />
   );
 };
-
-async function getImageFromUploadedFile(
-  mapbox: MapboxClient,
-  file: File
-): Promise<Image> {
-  const coordinates = await getLatLong(file);
-  return {
-    stateName: await mapbox.getStateFromCoordinates(coordinates),
-    ...coordinates,
-    takenAt: new Date(file.lastModified),
-    imgSrc: URL.createObjectURL(file),
-  };
-}
-
-async function saveImage(
-  file: File,
-  image: Image,
-  api: ApiClient
-): Promise<void> {
-  const imageMetadata: ImageMetadata = {
-    latitude: image.latitude,
-    longitude: image.longitude,
-    takenAt: new Date(file.lastModified),
-    name: file.name,
-  };
-
-  const presignStuff = await api.presign(imageMetadata);
-  const formData = new FormData();
-  Object.keys(presignStuff.data).forEach((k) => {
-    formData.append(k, presignStuff.data[k]);
-  });
-  formData.append("file", file);
-  await fetch(presignStuff.url, {
-    method: "POST",
-    body: formData,
-  });
-}
 
 export default ImageUpload;
