@@ -49,7 +49,6 @@ export class CognitoClient {
 
   async checkForLoggedInUser(): Promise<User | undefined> {
     const cognitoUser = this.userPool.getCurrentUser();
-    console.log(cognitoUser);
     if (!cognitoUser) {
       return undefined;
     }
@@ -62,7 +61,6 @@ export class CognitoClient {
           if (session.isValid() === false) {
             resolve(undefined);
           } else {
-            console.log("64", session.getIdToken().payload.email);
             resolve({
               id: cognitoUser.getUsername(),
               jwtToken: session.getIdToken().getJwtToken(),

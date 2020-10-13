@@ -13,29 +13,24 @@ interface Props {
 const Auth = (props: Props) => {
   if (props.loggedInUser) {
     return (
-      <div>
-        <span>{props.loggedInUser.email + " "}</span>
-        <input
-          type="submit"
-          value="Sign Out"
-          onClick={() => {
-            cognitoClient.signOut();
-            location.reload();
-          }}
-        />
-      </div>
+      <input
+        type="submit"
+        value="Sign Out"
+        onClick={() => {
+          cognitoClient.signOut();
+          location.reload();
+        }}
+      />
     );
   } else {
     return (
-      <div>
-        <input
-          type="submit"
-          value="Login or Sign Up"
-          onClick={() => {
-            Router.push("/login");
-          }}
-        />
-      </div>
+      <input
+        type="submit"
+        value="Login or Sign Up"
+        onClick={() => {
+          Router.push("/login");
+        }}
+      />
     );
   }
 };

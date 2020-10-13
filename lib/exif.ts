@@ -8,7 +8,6 @@ export async function getLatLong(
   try {
     exifData = await getExif(file);
   } catch (error) {
-    console.log("errored");
     exifData = findEXIFinHEIC(await file.arrayBuffer());
   }
 
