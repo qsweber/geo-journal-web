@@ -8,6 +8,9 @@ module.exports = {
       "/": {
         page: "/",
       },
+      "/images": {
+        page: "/images",
+      },
     };
   },
 };

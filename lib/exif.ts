@@ -8,7 +8,7 @@ export async function getLatLong(
   try {
     exifData = await getExif(file);
   } catch (error) {
-    exifData = findEXIFinHEIC(await file.arrayBuffer());
+    exifData = findEXIFinHEIC(await (file as any).arrayBuffer());
   }
 
   const latitudeComponents: number[] = exifData.GPSLatitude;
