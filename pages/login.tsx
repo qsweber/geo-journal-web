@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import Router from "next/router";
 
 import { CognitoClient } from "../clients/cognito";
@@ -97,7 +97,6 @@ const LoginPage = () => {
                 Router.push("/");
               } catch (err) {
                 setError2(err.message);
-                return;
               }
             }}
           />

@@ -1,4 +1,4 @@
-import { Component } from "react";
+import React, { Component, ReactNode } from "react";
 import { Map as BaseMap } from "mapbox-gl";
 import ReactMapGL, {
   ViewportProps,
@@ -8,6 +8,7 @@ import ReactMapGL, {
   Layer,
   Marker,
 } from "react-map-gl";
+import { ImageAndLocations } from "../interfaces";
 
 interface State {
   hoveredStateId: string | undefined;
@@ -16,26 +17,21 @@ interface State {
 }
 
 interface Props {
-  images: Image[];
-}
-
-export interface Image {
-  stateName: string;
-  latitude: number;
-  longitude: number;
-  imgSrc: string;
-  takenAt: Date;
+  chilren?: ReactNode;
+  images: ImageAndLocations[];
 }
 
 const imgStyle = {
   width: "50px",
+  borderRadius: "10px",
+  border: "1px solid black",
 };
 
 class Map extends Component<Props, State> {
   state: State = {
     viewport: {
       width: "100vw - 8px",
-      height: "88vh",
+      height: "92vh",
       latitude: 41.5868,
       longitude: -93.625,
       zoom: 4,
@@ -84,7 +80,7 @@ class Map extends Component<Props, State> {
                   [
                     "in",
                     ["get", "STATE_NAME"],
-                    ["literal", this.props.images.map((i) => i.stateName)],
+                    ["literal", this.props.images.map((i) => i.region)],
                   ],
                   0.3,
                   ["boolean", ["feature-state", "qsw"], false],
@@ -95,8 +91,8 @@ class Map extends Component<Props, State> {
             />
             {this.props.images.map((image, i) => (
               <Marker
-                latitude={image.latitude}
-                longitude={image.longitude}
+                latitude={image.coordinates.latitude}
+                longitude={image.coordinates.longitude}
                 offsetLeft={-25}
                 offsetTop={-25}
                 key={`${i}`}
@@ -105,6 +101,7 @@ class Map extends Component<Props, State> {
               </Marker>
             ))}
           </Source>
+          {this.props.children}
         </ReactMapGL>
       </div>
     );
