@@ -11,6 +11,15 @@ module.exports = {
       "/images": {
         page: "/images",
       },
+      "/login": {
+        page: "/login",
+      },
+      "/forgot": {
+        page: "/forgot",
+      },
+      "/signup": {
+        page: "/signup",
+      },
     };
   },
 };
