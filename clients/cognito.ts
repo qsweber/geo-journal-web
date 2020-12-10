@@ -49,7 +49,7 @@ export class CognitoClient {
 
   async forgotPassword(username: string): Promise<void> {
     const cognitoUser = this._getUser(username);
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       cognitoUser.forgotPassword({
         onSuccess: (_data) => {
           resolve();
@@ -67,7 +67,7 @@ export class CognitoClient {
     token: string
   ): Promise<User> {
     const cognitoUser = this._getUser(username);
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       cognitoUser.confirmPassword(token, newPassword, {
         onSuccess: () => {
           resolve();
