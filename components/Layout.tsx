@@ -2,7 +2,8 @@ import React, { ReactNode } from "react";
 import Head from "next/head";
 import Link from "next/link";
 
-import Auth from "./Auth";
+import SignOutButton from "./SignOutButton";
+import LoginButton from "./LoginButton";
 import { User } from "../interfaces";
 import Dropdown from "./Dropdown";
 
@@ -52,7 +53,7 @@ const Layout = ({ children, title = "State Tracker", loggedInUser }: Props) => {
             <br />
             <Link href="/images">Images</Link>
             <br />
-            <Auth loggedInUser={loggedInUser} />
+            {loggedInUser ? <SignOutButton /> : <LoginButton />}
           </Dropdown>
         </nav>
       </header>

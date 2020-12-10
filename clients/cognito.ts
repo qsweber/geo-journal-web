@@ -47,6 +47,40 @@ export class CognitoClient {
     });
   }
 
+  async forgotPassword(username: string): Promise<void> {
+    const cognitoUser = this._getUser(username);
+    return new Promise<void>((resolve, reject) => {
+      cognitoUser.forgotPassword({
+        onSuccess: (_data) => {
+          resolve();
+        },
+        onFailure: (err) => {
+          reject(err);
+        },
+      });
+    });
+  }
+
+  async confirmForgotPassword(
+    username: string,
+    newPassword: string,
+    token: string
+  ): Promise<User> {
+    const cognitoUser = this._getUser(username);
+    await new Promise<void>((resolve, reject) => {
+      cognitoUser.confirmPassword(token, newPassword, {
+        onSuccess: () => {
+          resolve();
+        },
+        onFailure: (err) => {
+          reject(err);
+        },
+      });
+    });
+
+    return this.authenticateUser(username, newPassword);
+  }
+
   async checkForLoggedInUser(): Promise<User | undefined> {
     const cognitoUser = this.userPool.getCurrentUser();
     if (!cognitoUser) {

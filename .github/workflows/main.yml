@@ -11,14 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1.1.0
+      - uses: actions/setup-node@v2-beta
       - run: yarn install && yarn build && yarn export
   deploy:
     runs-on: "ubuntu-latest"
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1.1.0
+      - uses: actions/setup-node@v2-beta
       - run: yarn install && yarn build && yarn export
       - run: pip install awscli
       - name: sync to S3
