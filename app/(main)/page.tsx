@@ -1,12 +1,7 @@
 "use client";
 
-import { Section } from "../components/Section";
+import { USMap } from "../components/USMap";
 
 export default function Home() {
-  return (
-    <div>
-      <Section>Hello!</Section>
-      <Section>This is a basic react template.</Section>
-    </div>
-  );
+  return <USMap />;
 }
