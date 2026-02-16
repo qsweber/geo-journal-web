@@ -1,0 +1,18 @@
+name: Pull Request Workflow
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    with:
+      stack: dev
+      environment: dev
+      run-deploy: true
+    secrets:
+      PULUMI_CLOUD_URL: ${{ secrets.PULUMI_CLOUD_URL }}
+      PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
