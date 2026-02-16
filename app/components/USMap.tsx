@@ -1,11 +1,18 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import Map, { Source, Layer, MapRef } from "react-map-gl/mapbox";
+import Map, { Source, Layer, MapRef, Marker } from "react-map-gl/mapbox";
 import styled from "@emotion/styled";
 import "mapbox-gl/dist/mapbox-gl.css";
 import bbox from "@turf/bbox";
 import { useMapState } from "./MapStateContext";
+
+interface ImageLocation {
+  lat: number;
+  lng: number;
+  filename: string;
+  dataUrl?: string;
+}
 
 const MAPBOX_TOKEN =
   "pk.eyJ1IjoicXN3ZWJlciIsImEiOiJjam5nZTZuazgwMTlkM2twYXpjYmpqeTBjIn0.viU-jQrjmOf40aONFwjQdQ";
@@ -29,17 +36,100 @@ const ZoomOutButton = styled.button(() => ({
   },
 }));
 
+const AddImagesButton = styled.button(() => ({
+  position: "absolute",
+  top: "70px",
+  right: "20px",
+  padding: "12px 24px",
+  backgroundColor: "#627BC1",
+  color: "white",
+  border: "none",
+  borderRadius: "4px",
+  fontWeight: "600",
+  fontSize: "14px",
+  cursor: "pointer",
+  zIndex: 10,
+  boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+  "&:hover": {
+    backgroundColor: "#526aa3",
+  },
+}));
+
 const MapContainer = styled.div(() => ({
   position: "relative",
   width: "100%",
   height: "100vh",
 }));
 
+const HiddenFileInput = styled.input(() => ({
+  display: "none",
+}));
+
+const ModalOverlay = styled.div(() => ({
+  position: "fixed",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: "rgba(0, 0, 0, 0.7)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1000,
+}));
+
+const ModalContent = styled.div(() => ({
+  position: "relative",
+  backgroundColor: "white",
+  borderRadius: "8px",
+  padding: "20px",
+  maxWidth: "90%",
+  maxHeight: "90vh",
+  overflow: "auto",
+  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
+}));
+
+const ModalImage = styled.img(() => ({
+  maxWidth: "100%",
+  maxHeight: "80vh",
+  display: "block",
+}));
+
+const CloseButton = styled.button(() => ({
+  position: "absolute",
+  top: "10px",
+  right: "10px",
+  backgroundColor: "#627BC1",
+  color: "white",
+  border: "none",
+  borderRadius: "4px",
+  padding: "8px 12px",
+  fontSize: "16px",
+  cursor: "pointer",
+  zIndex: 1001,
+  "&:hover": {
+    backgroundColor: "#526aa3",
+  },
+}));
+
+const ImageFilename = styled.p(() => ({
+  marginTop: "16px",
+  marginBottom: 0,
+  color: "#333",
+  fontSize: "14px",
+  fontWeight: "600",
+}));
+
 export function USMap() {
   const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
   const [hoveredCountyId, setHoveredCountyId] = useState<string | null>(null);
+  const [imageLocations, setImageLocations] = useState<ImageLocation[]>([]);
+  const [selectedImage, setSelectedImage] = useState<ImageLocation | null>(
+    null,
+  );
   const { clickedStates, setClickedStates } = useMapState();
   const mapRef = useRef<MapRef>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Cleanup function to remove the map when component unmounts
@@ -49,6 +139,38 @@ export function USMap() {
       }
     };
   }, []);
+
+  const getStateFromCoordinates = useCallback(
+    async (lat: number, lng: number): Promise<string | null> => {
+      try {
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}`,
+        );
+        const data = await response.json();
+
+        if (!data.features || data.features.length === 0) {
+          console.warn("No results from geocoding API");
+          return null;
+        }
+
+        // Find the region feature (state)
+        for (const feature of data.features) {
+          if (feature.id?.startsWith("region.")) {
+            const stateName = feature.text;
+            console.log(`Found state from geocoding API: ${stateName}`);
+            return stateName;
+          }
+        }
+
+        console.warn("No region found in geocoding results");
+        return null;
+      } catch (error) {
+        console.error("Error calling Mapbox Geocoding API:", error);
+        return null;
+      }
+    },
+    [],
+  );
 
   const handleStateClick = useCallback(
     (e: any) => {
@@ -131,14 +253,191 @@ export function USMap() {
     });
   }, []);
 
+  const extractGPSFromExif = (
+    exifData: any,
+  ): { lat: number; lng: number } | null => {
+    try {
+      console.log("EXIF Data:", exifData);
+
+      if (!exifData) {
+        console.warn("No EXIF data provided");
+        return null;
+      }
+
+      const gpsLat = exifData.GPSLatitude;
+      const gpsLng = exifData.GPSLongitude;
+      const gpsLatRef = exifData.GPSLatitudeRef;
+      const gpsLngRef = exifData.GPSLongitudeRef;
+
+      console.log("GPS Lat:", gpsLat, "Ref:", gpsLatRef);
+      console.log("GPS Lng:", gpsLng, "Ref:", gpsLngRef);
+
+      if (!gpsLat || !gpsLng) {
+        console.warn("Missing GPS coordinates");
+        return null;
+      }
+
+      const toDecimal = (gpsCoord: any, gpsRef: string): number => {
+        // Handle both array format and tuple format from piexif
+        let d, m, s;
+
+        if (Array.isArray(gpsCoord)) {
+          // Could be [degrees, minutes, seconds] or [[num, denom], [num, denom], [num, denom]]
+          d =
+            typeof gpsCoord[0] === "object"
+              ? gpsCoord[0][0] / gpsCoord[0][1]
+              : gpsCoord[0];
+          m =
+            typeof gpsCoord[1] === "object"
+              ? gpsCoord[1][0] / gpsCoord[1][1]
+              : gpsCoord[1];
+          s =
+            typeof gpsCoord[2] === "object"
+              ? gpsCoord[2][0] / gpsCoord[2][1]
+              : gpsCoord[2];
+        } else {
+          console.warn("Unexpected GPS coordinate format:", gpsCoord);
+          return NaN;
+        }
+
+        let decimal = d + m / 60 + s / 3600;
+        if (gpsRef === "S" || gpsRef === "W") {
+          decimal = decimal * -1;
+        }
+
+        console.log(
+          `Converted ${gpsRef}: ${d} + ${m}/60 + ${s}/3600 = ${decimal}`,
+        );
+        return decimal;
+      };
+
+      const lat = toDecimal(gpsLat, gpsLatRef ?? "N");
+      const lng = toDecimal(gpsLng, gpsLngRef ?? "E");
+
+      if (isNaN(lat) || isNaN(lng)) {
+        console.warn("Invalid GPS coordinates:", { lat, lng });
+        return null;
+      }
+
+      return { lat, lng };
+    } catch (error) {
+      console.error("Error extracting GPS from EXIF:", error);
+      return null;
+    }
+  };
+
+  const handleImageUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.currentTarget.files;
+      if (!files) return;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        try {
+          const reader = new FileReader();
+
+          reader.onload = async (event) => {
+            try {
+              const data = event.target?.result;
+              if (!(data instanceof ArrayBuffer)) return;
+
+              const piexif = await import("piexifjs");
+
+              // Convert ArrayBuffer to binary string safely (avoid stack overflow)
+              const bytes = new Uint8Array(data);
+              let binary = "";
+              for (let j = 0; j < bytes.length; j++) {
+                binary += String.fromCharCode(bytes[j]);
+              }
+
+              let exifDict: Record<string, any>;
+              try {
+                exifDict = piexif.load(binary);
+              } catch (e) {
+                console.warn(`${file.name} has no EXIF data or corrupted EXIF`);
+                return;
+              }
+
+              const gpsData = exifDict.GPS;
+              if (!gpsData || !piexif.TAGS?.GPS) {
+                console.warn(`${file.name} has no GPS data`);
+                return;
+              }
+
+              const gpsInfo: Record<string, any> = {};
+              for (const tag in gpsData) {
+                const tagNum = parseInt(tag);
+                if (piexif.TAGS.GPS[tagNum]) {
+                  const tagName = piexif.TAGS.GPS[tagNum]["name"];
+                  gpsInfo[tagName] = gpsData[tag];
+                }
+              }
+
+              const coords = extractGPSFromExif(gpsInfo);
+              if (coords) {
+                console.log(`Extracted GPS for ${file.name}:`, coords);
+                // Extract the state from the coordinates using Mapbox Geocoding API
+                getStateFromCoordinates(coords.lat, coords.lng).then(
+                  (stateName) => {
+                    if (stateName) {
+                      console.log(`Image from state: ${stateName}`);
+                      // Add the state to clicked states
+                      setClickedStates((prev) => {
+                        const newSet = new Set(prev);
+                        newSet.add(stateName);
+                        return newSet;
+                      });
+                    } else {
+                      console.warn(
+                        `Could not determine state for coordinates: ${coords.lat}, ${coords.lng}`,
+                      );
+                    }
+                  },
+                );
+
+                // Create a data URL from the image file for display in modal
+                const imageReader = new FileReader();
+                imageReader.onload = (imageEvent) => {
+                  const location: ImageLocation = {
+                    lat: coords.lat,
+                    lng: coords.lng,
+                    filename: file.name,
+                    dataUrl: (imageEvent.target?.result as string) ?? undefined,
+                  };
+
+                  setImageLocations((prev) => [...prev, location]);
+                };
+                imageReader.readAsDataURL(file);
+              } else {
+                console.warn(`${file.name} has no valid GPS data`);
+              }
+            } catch (error) {
+              console.error(`Error processing ${file.name}:`, error);
+            }
+          };
+
+          reader.readAsArrayBuffer(file);
+        } catch (error) {
+          console.error(`Error reading ${file.name}:`, error);
+        }
+      }
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    [],
+  );
+
+  const handleAddImages = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
   return (
     <MapContainer>
-      <ZoomOutButton onClick={handleZoomOut}>Reset View</ZoomOutButton>
       <Map
-        key="us-map"
         ref={mapRef}
-        reuseMaps={false}
-        doubleClickZoom={false}
         initialViewState={{
           longitude: -98.5795,
           latitude: 39.8283,
@@ -245,7 +544,61 @@ export function USMap() {
             }}
           />
         </Source>
+
+        {/* Image location markers */}
+        {imageLocations.map((location, index) => (
+          <Marker
+            key={`image-marker-${index}`}
+            longitude={location.lng}
+            latitude={location.lat}
+            anchor="bottom"
+          >
+            <div
+              style={{
+                width: "30px",
+                height: "30px",
+                backgroundColor: "#FF6B6B",
+                borderRadius: "50%",
+                border: "3px solid white",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                fontSize: "16px",
+              }}
+              title={location.filename}
+              onClick={() => setSelectedImage(location)}
+            >
+              📸
+            </div>
+          </Marker>
+        ))}
       </Map>
+
+      <ZoomOutButton onClick={handleZoomOut}>Reset View</ZoomOutButton>
+      <AddImagesButton onClick={handleAddImages}>Add Images</AddImagesButton>
+      <HiddenFileInput
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*"
+        onChange={handleImageUpload}
+      />
+
+      {/* Image modal */}
+      {selectedImage && selectedImage.dataUrl && (
+        <ModalOverlay onClick={() => setSelectedImage(null)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <CloseButton onClick={() => setSelectedImage(null)}>✕</CloseButton>
+            <ModalImage
+              src={selectedImage.dataUrl}
+              alt={selectedImage.filename}
+            />
+            <ImageFilename>{selectedImage.filename}</ImageFilename>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </MapContainer>
   );
 }
