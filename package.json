@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@emotion/styled": "^11.11.0",
+    "@turf/bbox": "^7.3.4",
     "amazon-cognito-identity-js": "^6.3.16",
     "mapbox-gl": "^3.18.1",
     "maplibre-gl": "^5.18.0",
