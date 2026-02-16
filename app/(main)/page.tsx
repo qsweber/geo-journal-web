@@ -1,7 +1,7 @@
 "use client";
 
-import Map from "../components/Map";
+import { USMap } from "../components/USMap";
 
 export default function Home() {
-  return <Map />;
+  return <USMap />;
 }
