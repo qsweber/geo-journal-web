@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import styled from "@emotion/styled";
 import { useAuth } from "../../lib/auth/useAuth";
+import { useMapState } from "./MapStateContext";
 
 const SidebarWrapper = styled.div(() => ({
   width: "250px",
@@ -31,6 +32,10 @@ const NavSection = styled.nav(() => ({
   padding: "16px 0",
 }));
 
+const NavItemWrapper = styled.div(() => ({
+  position: "relative",
+}));
+
 const NavItem = styled.a<{ $isActive: boolean }>(({ $isActive }) => ({
   display: "block",
   padding: "12px 20px",
@@ -44,6 +49,32 @@ const NavItem = styled.a<{ $isActive: boolean }>(({ $isActive }) => ({
   "&:hover": {
     backgroundColor: "#e9ecef",
   },
+}));
+
+const ProgressBarContainer = styled.div(() => ({
+  padding: "8px 20px 12px 20px",
+}));
+
+const ProgressBarBackground = styled.div(() => ({
+  width: "100%",
+  height: "8px",
+  backgroundColor: "#e9ecef",
+  borderRadius: "4px",
+  overflow: "hidden",
+}));
+
+const ProgressBarFill = styled.div<{ $percentage: number }>(({ $percentage }) => ({
+  height: "100%",
+  width: `${$percentage}%`,
+  backgroundColor: "#627BC1",
+  transition: "width 0.3s ease",
+}));
+
+const ProgressText = styled.div(() => ({
+  fontSize: "12px",
+  color: "#666",
+  marginTop: "4px",
+  textAlign: "center",
 }));
 
 const UserSection = styled.div(() => ({
@@ -92,6 +123,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, user, signOut, isLoading } = useAuth();
+  const { clickedStates } = useMapState();
 
   const handleLogout = () => {
     signOut();
@@ -102,14 +134,30 @@ export function Sidebar() {
     router.push("/login");
   };
 
+  const totalStates = 50;
+  const selectedCount = clickedStates.size;
+  const percentage = Math.round((selectedCount / totalStates) * 100);
+
   return (
     <SidebarWrapper>
       <Logo>Geo Journal</Logo>
       
       <NavSection>
-        <Link href="/" passHref legacyBehavior>
-          <NavItem $isActive={pathname === "/"}>United States</NavItem>
-        </Link>
+        <NavItemWrapper>
+          <Link href="/" passHref legacyBehavior>
+            <NavItem $isActive={pathname === "/"}>United States</NavItem>
+          </Link>
+          {pathname === "/" && (
+            <ProgressBarContainer>
+              <ProgressBarBackground>
+                <ProgressBarFill $percentage={percentage} />
+              </ProgressBarBackground>
+              <ProgressText>
+                {selectedCount} / {totalStates} states ({percentage}%)
+              </ProgressText>
+            </ProgressBarContainer>
+          )}
+        </NavItemWrapper>
         <Link href="/another" passHref legacyBehavior>
           <NavItem $isActive={pathname === "/another"}>Another</NavItem>
         </Link>

@@ -2,15 +2,43 @@
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import Map, { Source, Layer, MapRef } from "react-map-gl/mapbox";
+import styled from "@emotion/styled";
 import "mapbox-gl/dist/mapbox-gl.css";
 import bbox from "@turf/bbox";
+import { useMapState } from "./MapStateContext";
 
 const MAPBOX_TOKEN =
   "pk.eyJ1IjoicXN3ZWJlciIsImEiOiJjam5nZTZuazgwMTlkM2twYXpjYmpqeTBjIn0.viU-jQrjmOf40aONFwjQdQ";
 
+const ZoomOutButton = styled.button(() => ({
+  position: "absolute",
+  top: "20px",
+  right: "20px",
+  padding: "12px 24px",
+  backgroundColor: "#627BC1",
+  color: "white",
+  border: "none",
+  borderRadius: "4px",
+  fontWeight: "600",
+  fontSize: "14px",
+  cursor: "pointer",
+  zIndex: 10,
+  boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+  "&:hover": {
+    backgroundColor: "#526aa3",
+  },
+}));
+
+const MapContainer = styled.div(() => ({
+  position: "relative",
+  width: "100%",
+  height: "100vh",
+}));
+
 export function USMap() {
   const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
   const [hoveredCountyId, setHoveredCountyId] = useState<string | null>(null);
+  const { clickedStates, setClickedStates } = useMapState();
   const mapRef = useRef<MapRef>(null);
 
   useEffect(() => {
@@ -23,12 +51,35 @@ export function USMap() {
   }, []);
 
   const handleStateClick = useCallback((e: any) => {
+    if (!e.features || e.features.length === 0) return;
+    
+    const feature = e.features[0];
+    if (!feature) return;
+    
+    // Only handle state clicks (not counties)
+    if (feature.layer?.id !== "us-state-fills") return;
+    
+    const stateName = feature.properties?.STATE_NAME;
+    if (stateName) {
+      setClickedStates(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(stateName)) {
+          newSet.delete(stateName);
+        } else {
+          newSet.add(stateName);
+        }
+        return newSet;
+      });
+    }
+  }, [setClickedStates]);
+
+  const handleStateDoubleClick = useCallback((e: any) => {
     if (!e.features || e.features.length === 0 || !mapRef.current) return;
     
     const feature = e.features[0];
     if (!feature) return;
     
-    // Only zoom to state if we clicked a state feature (not a county)
+    // Only zoom to state if we double-clicked a state feature
     if (feature.layer?.id !== "us-state-fills") return;
     
     // Make sure the feature has geometry
@@ -67,20 +118,35 @@ export function USMap() {
     // You can add more functionality here, like showing details or zooming
   }, []);
 
+  const handleZoomOut = useCallback(() => {
+    if (!mapRef.current) return;
+    
+    mapRef.current.flyTo({
+      center: [-98.5795, 39.8283],
+      zoom: 3.5,
+      duration: 1000,
+    });
+  }, []);
+
   return (
-    <Map
-      key="us-map"
-      ref={mapRef}
-      reuseMaps={false}
-      initialViewState={{
-        longitude: -98.5795,
-        latitude: 39.8283,
-        zoom: 3.5,
-      }}
-      style={{
-        width: "100%",
-        height: "100vh",
-      }}
+    <MapContainer>
+      <ZoomOutButton onClick={handleZoomOut}>
+        Reset View
+      </ZoomOutButton>
+      <Map
+        key="us-map"
+        ref={mapRef}
+        reuseMaps={false}
+        doubleClickZoom={false}
+        initialViewState={{
+          longitude: -98.5795,
+          latitude: 39.8283,
+          zoom: 3.5,
+        }}
+        style={{
+          width: "100%",
+          height: "100vh",
+        }}
       mapStyle="mapbox://styles/mapbox/light-v11"
       mapboxAccessToken={MAPBOX_TOKEN}
       interactiveLayerIds={["us-state-fills", "us-county-fills"]}
@@ -106,6 +172,7 @@ export function USMap() {
         handleStateClick(e);
         handleCountyClick(e);
       }}
+      onDblClick={handleStateDoubleClick}
       cursor={hoveredStateId || hoveredCountyId ? "pointer" : "grab"}
     >
       <Source
@@ -121,6 +188,8 @@ export function USMap() {
             "fill-color": "#627BC1",
             "fill-opacity": [
               "case",
+              ["in", ["get", "STATE_NAME"], ["literal", Array.from(clickedStates)]],
+              0.3,
               ["==", ["get", "STATE_NAME"], hoveredStateId ?? ""],
               0.3,
               0.0,
@@ -172,5 +241,6 @@ export function USMap() {
         />
       </Source>
     </Map>
+    </MapContainer>
   );
 }

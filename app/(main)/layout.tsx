@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import styled from "@emotion/styled";
 import { Sidebar } from "../components/Sidebar";
 import { AuthProvider } from "../../lib/auth/AuthContext";
+import { MapStateProvider } from "../components/MapStateContext";
 
 const LayoutWrapper = styled.div(() => ({
   display: "flex",
@@ -22,10 +23,12 @@ const MainContent = styled.main(() => ({
 export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
-      <LayoutWrapper>
-        <Sidebar />
-        <MainContent>{children}</MainContent>
-      </LayoutWrapper>
+      <MapStateProvider>
+        <LayoutWrapper>
+          <Sidebar />
+          <MainContent>{children}</MainContent>
+        </LayoutWrapper>
+      </MapStateProvider>
     </AuthProvider>
   );
 }
