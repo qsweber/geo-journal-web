@@ -63,12 +63,14 @@ const ProgressBarBackground = styled.div(() => ({
   overflow: "hidden",
 }));
 
-const ProgressBarFill = styled.div<{ $percentage: number }>(({ $percentage }) => ({
-  height: "100%",
-  width: `${$percentage}%`,
-  backgroundColor: "#627BC1",
-  transition: "width 0.3s ease",
-}));
+const ProgressBarFill = styled.div<{ $percentage: number }>(
+  ({ $percentage }) => ({
+    height: "100%",
+    width: `${$percentage}%`,
+    backgroundColor: "#627BC1",
+    transition: "width 0.3s ease",
+  }),
+);
 
 const ProgressText = styled.div(() => ({
   fontSize: "12px",
@@ -141,7 +143,7 @@ export function Sidebar() {
   return (
     <SidebarWrapper>
       <Logo>Geo Journal</Logo>
-      
+
       <NavSection>
         <NavItemWrapper>
           <Link href="/" passHref legacyBehavior>

@@ -7,7 +7,9 @@ interface MapStateContextType {
   setClickedStates: React.Dispatch<React.SetStateAction<Set<string>>>;
 }
 
-const MapStateContext = createContext<MapStateContextType | undefined>(undefined);
+const MapStateContext = createContext<MapStateContextType | undefined>(
+  undefined,
+);
 
 export function MapStateProvider({ children }: { children: React.ReactNode }) {
   const [clickedStates, setClickedStates] = useState<Set<string>>(new Set());
