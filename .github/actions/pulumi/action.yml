@@ -1,0 +1,44 @@
+name: Pulumi Operation
+description: Run a Pulumi preview or update against a stack
+
+inputs:
+  stack:
+    description: Pulumi stack name
+    required: true
+  operation:
+    description: Pulumi operation to run (preview or up)
+    required: true
+  pulumi-cloud-url:
+    description: Pulumi backend URL for login
+    required: true
+  workdir:
+    description: Directory containing Pulumi.yaml
+    required: false
+    default: infrastructure
+
+runs:
+  using: composite
+  steps:
+    - uses: pulumi/actions@v4
+
+    - name: Pulumi login
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "${{ inputs.workdir }}"
+        pulumi login "${{ inputs.pulumi-cloud-url }}"
+
+    - name: Pulumi operation
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "${{ inputs.workdir }}"
+
+        if [[ "${{ inputs.operation }}" == "preview" ]]; then
+          pulumi preview --stack "${{ inputs.stack }}" --non-interactive
+        elif [[ "${{ inputs.operation }}" == "up" ]]; then
+          pulumi up --stack "${{ inputs.stack }}" --non-interactive --yes
+        else
+          echo "Unsupported Pulumi operation: ${{ inputs.operation }}"
+          exit 1
+        fi

@@ -3,5 +3,3 @@ config:
   bucket: dev-template.quinnweber.com
   certificateArn: arn:aws:acm:us-east-1:120356305272:certificate/10f59a3f-a08e-4b8d-8a4c-f0a5fcb61e83
   zoneId: Z07290422T6PHN4TKVNW0
-  sesFromEmail: dev-template@quinnweber.com
-  sesEmailIdentityArn: arn:aws:ses:us-west-2:120356305272:identity/quinnweber.com

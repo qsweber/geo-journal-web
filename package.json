@@ -10,8 +10,8 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@pulumi/aws": "^6.3.0",
-    "@pulumi/pulumi": "^3.0.0",
+    "@pulumi/aws": "6.83.2",
+    "@pulumi/pulumi": "3.226.0",
     "@types/node": "^22.5.0",
     "@types/react": "^18.2.22",
     "@types/react-dom": "^18.2.7",
