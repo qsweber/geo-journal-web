@@ -18,6 +18,7 @@
       {
         "argsIgnorePattern": "^_"
       }
-    ]
+    ],
+    "no-undef": "off"
   }
 }

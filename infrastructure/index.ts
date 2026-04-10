@@ -144,3 +144,4 @@ export const distributionId = distribution.id;
 export const cNameRecordUrn = cNameRecord.urn;
 export const userPoolId = userPool.id;
 export const userPoolClientId = userPoolClient.id;
+export const apiUrl = config.require("apiUrl");
