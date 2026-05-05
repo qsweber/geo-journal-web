@@ -1,11 +1,11 @@
 {
-  "files.exclude": {
-    ".next/": true,
-    "out/": true
-  },
-  "editor.codeActionsOnSave": {
-    "source.fixAll": true
-  },
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.validate": ["typescript"],
+  "eslint.format.enable": true,
+  "eslint.lintTask.enable": true,
+  "eslint.run": "onSave",
+  "editor.defaultFormatter": "dbaeumer.vscode-eslint"
 }
