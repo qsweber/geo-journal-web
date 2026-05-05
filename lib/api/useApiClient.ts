@@ -5,25 +5,14 @@ import { useAuth } from "../auth/useAuth";
 import { ApiClient } from "./client";
 
 /**
- * Hook to get an authenticated API client
+ * Hook to get an authenticated API client, or null if NEXT_PUBLIC_API_URL is not configured.
  */
-export const useApiClient = () => {
+export const useApiClient = (): ApiClient | null => {
   const { getIdToken } = useAuth();
 
-  const apiClient = useMemo(() => {
+  return useMemo(() => {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-
-    if (!baseUrl) {
-      throw new Error(
-        "NEXT_PUBLIC_API_URL environment variable is not set. It must be defined to configure the API client base URL.",
-      );
-    }
-
-    return new ApiClient({
-      baseUrl,
-      getIdToken,
-    });
+    if (!baseUrl) return null;
+    return new ApiClient({ baseUrl, getIdToken });
   }, [getIdToken]);
-
-  return apiClient;
 };

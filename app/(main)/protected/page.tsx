@@ -81,6 +81,10 @@ export default function ProtectedPage() {
   }, [isAuthenticated, isLoading, router]);
 
   const callApi = async () => {
+    if (!apiClient) {
+      setApiError("API client is not configured (NEXT_PUBLIC_API_URL missing)");
+      return;
+    }
     setIsLoadingApi(true);
     setApiError(null);
     setApiResponse(null);

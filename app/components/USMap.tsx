@@ -6,12 +6,39 @@ import styled from "@emotion/styled";
 import "mapbox-gl/dist/mapbox-gl.css";
 import bbox from "@turf/bbox";
 import { useMapState } from "./MapStateContext";
+import { useAuth } from "../../lib/auth/useAuth";
+import { useApiClient } from "../../lib/api/useApiClient";
 
 interface ImageLocation {
   lat: number;
   lng: number;
   filename: string;
   dataUrl?: string;
+}
+
+function toApiImageLocation(img: {
+  latitude: string;
+  longitude: string;
+  name: string;
+  presigned_url: string;
+}): ImageLocation | null {
+  const lat = Number.parseFloat(img.latitude);
+  const lng = Number.parseFloat(img.longitude);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return null;
+  }
+
+  return {
+    lat,
+    lng,
+    filename: img.name,
+    dataUrl: img.presigned_url,
+  };
 }
 
 const MAPBOX_TOKEN =
@@ -124,10 +151,15 @@ export function USMap() {
   const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
   const [hoveredCountyId, setHoveredCountyId] = useState<string | null>(null);
   const [imageLocations, setImageLocations] = useState<ImageLocation[]>([]);
+  const [apiImageLocations, setApiImageLocations] = useState<ImageLocation[]>(
+    [],
+  );
   const [selectedImage, setSelectedImage] = useState<ImageLocation | null>(
     null,
   );
   const { clickedStates, setClickedStates } = useMapState();
+  const { isAuthenticated } = useAuth();
+  const apiClient = useApiClient();
   const mapRef = useRef<MapRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -139,6 +171,26 @@ export function USMap() {
       }
     };
   }, []);
+
+  // Fetch the user's images from the API whenever they become authenticated
+  useEffect(() => {
+    if (!isAuthenticated || !apiClient) {
+      setApiImageLocations([]);
+      return;
+    }
+
+    apiClient
+      .getImages()
+      .then(({ images }) => {
+        const locations = images
+          .map(toApiImageLocation)
+          .filter((location): location is ImageLocation => location !== null);
+        setApiImageLocations(locations);
+      })
+      .catch((err) => {
+        console.error("Failed to load images from API:", err);
+      });
+  }, [isAuthenticated, apiClient]);
 
   const getStateFromCoordinates = useCallback(
     async (lat: number, lng: number): Promise<string | null> => {
@@ -377,6 +429,41 @@ export function USMap() {
               const coords = extractGPSFromExif(gpsInfo);
               if (coords) {
                 console.log(`Extracted GPS for ${file.name}:`, coords);
+
+                // Upload to S3 via API presign flow when authenticated.
+                if (isAuthenticated && apiClient) {
+                  try {
+                    const takenAt = Math.floor(
+                      (file.lastModified || Date.now()) / 1000,
+                    ).toString();
+
+                    await apiClient.uploadImage(
+                      {
+                        name: file.name,
+                        latitude: coords.lat.toString(),
+                        longitude: coords.lng.toString(),
+                        taken_at: takenAt,
+                      },
+                      file,
+                    );
+
+                    const { images } = await apiClient.getImages();
+                    setApiImageLocations(
+                      images
+                        .map(toApiImageLocation)
+                        .filter(
+                          (location): location is ImageLocation =>
+                            location !== null,
+                        ),
+                    );
+                  } catch (uploadError) {
+                    console.error(
+                      `Failed to upload ${file.name}:`,
+                      uploadError,
+                    );
+                  }
+                }
+
                 // Extract the state from the coordinates using Mapbox Geocoding API
                 getStateFromCoordinates(coords.lat, coords.lng).then(
                   (stateName) => {
@@ -427,7 +514,13 @@ export function USMap() {
         fileInputRef.current.value = "";
       }
     },
-    [],
+    [
+      apiClient,
+      getStateFromCoordinates,
+      isAuthenticated,
+      setClickedStates,
+      setApiImageLocations,
+    ],
   );
 
   const handleAddImages = useCallback(() => {
@@ -545,8 +638,8 @@ export function USMap() {
           />
         </Source>
 
-        {/* Image location markers */}
-        {imageLocations.map((location, index) => (
+        {/* Image location markers (local uploads + API images) */}
+        {[...apiImageLocations, ...imageLocations].map((location, index) => (
           <Marker
             key={`image-marker-${index}`}
             longitude={location.lng}

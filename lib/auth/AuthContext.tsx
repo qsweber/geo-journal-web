@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useEffect, useState } from "react";
 import { CognitoUserSession } from "amazon-cognito-identity-js";
 import {
   signIn as cognitoSignIn,
@@ -113,13 +113,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     await cognitoResetPassword(params);
   };
 
-  const getIdToken = (): string | null => {
+  const getIdToken = useCallback((): string | null => {
     return session?.getIdToken().getJwtToken() ?? null;
-  };
+  }, [session]);
 
-  const getAccessToken = (): string | null => {
+  const getAccessToken = useCallback((): string | null => {
     return session?.getAccessToken().getJwtToken() ?? null;
-  };
+  }, [session]);
 
   const value = {
     user,
