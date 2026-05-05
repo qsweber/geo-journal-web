@@ -2,9 +2,18 @@
 
 import React, { createContext, useContext, useState } from "react";
 
+export interface VisitedLocation {
+  lat: number;
+  lng: number;
+  filename: string;
+  dataUrl?: string;
+}
+
 interface MapStateContextType {
-  clickedStates: Set<string>;
-  setClickedStates: React.Dispatch<React.SetStateAction<Set<string>>>;
+  visitedStates: Set<string>;
+  setVisitedStates: React.Dispatch<React.SetStateAction<Set<string>>>;
+  visitedLocations: VisitedLocation[];
+  setVisitedLocations: React.Dispatch<React.SetStateAction<VisitedLocation[]>>;
 }
 
 const MapStateContext = createContext<MapStateContextType | undefined>(
@@ -12,10 +21,20 @@ const MapStateContext = createContext<MapStateContextType | undefined>(
 );
 
 export function MapStateProvider({ children }: { children: React.ReactNode }) {
-  const [clickedStates, setClickedStates] = useState<Set<string>>(new Set());
+  const [visitedStates, setVisitedStates] = useState<Set<string>>(new Set());
+  const [visitedLocations, setVisitedLocations] = useState<VisitedLocation[]>(
+    [],
+  );
 
   return (
-    <MapStateContext.Provider value={{ clickedStates, setClickedStates }}>
+    <MapStateContext.Provider
+      value={{
+        visitedStates,
+        setVisitedStates,
+        visitedLocations,
+        setVisitedLocations,
+      }}
+    >
       {children}
     </MapStateContext.Provider>
   );

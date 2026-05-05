@@ -125,7 +125,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, user, signOut, isLoading } = useAuth();
-  const { clickedStates } = useMapState();
+  const { visitedStates } = useMapState();
 
   const handleLogout = () => {
     signOut();
@@ -137,7 +137,7 @@ export function Sidebar() {
   };
 
   const totalStates = 50;
-  const selectedCount = clickedStates.size;
+  const selectedCount = visitedStates.size;
   const percentage = Math.round((selectedCount / totalStates) * 100);
 
   return (
@@ -160,16 +160,7 @@ export function Sidebar() {
             </ProgressBarContainer>
           )}
         </NavItemWrapper>
-        <Link href="/another" passHref legacyBehavior>
-          <NavItem $isActive={pathname === "/another"}>Another</NavItem>
-        </Link>
-        {isAuthenticated && (
-          <Link href="/protected" passHref legacyBehavior>
-            <NavItem $isActive={pathname === "/protected"}>Protected</NavItem>
-          </Link>
-        )}
       </NavSection>
-
       <UserSection>
         {isLoading ? (
           <div>Loading...</div>

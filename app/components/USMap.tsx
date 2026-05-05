@@ -5,23 +5,16 @@ import Map, { Source, Layer, MapRef, Marker } from "react-map-gl/mapbox";
 import styled from "@emotion/styled";
 import "mapbox-gl/dist/mapbox-gl.css";
 import bbox from "@turf/bbox";
-import { useMapState } from "./MapStateContext";
+import { useMapState, type VisitedLocation } from "./MapStateContext";
 import { useAuth } from "../../lib/auth/useAuth";
 import { useApiClient } from "../../lib/api/useApiClient";
-
-interface ImageLocation {
-  lat: number;
-  lng: number;
-  filename: string;
-  dataUrl?: string;
-}
 
 function toApiImageLocation(img: {
   latitude: string;
   longitude: string;
   name: string;
   presigned_url: string;
-}): ImageLocation | null {
+}): VisitedLocation | null {
   const lat = Number.parseFloat(img.latitude);
   const lng = Number.parseFloat(img.longitude);
 
@@ -150,24 +143,27 @@ const ImageFilename = styled.p(() => ({
 export function USMap() {
   const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
   const [hoveredCountyId, setHoveredCountyId] = useState<string | null>(null);
-  const [imageLocations, setImageLocations] = useState<ImageLocation[]>([]);
-  const [apiImageLocations, setApiImageLocations] = useState<ImageLocation[]>(
-    [],
-  );
-  const [selectedImage, setSelectedImage] = useState<ImageLocation | null>(
+  const [selectedImage, setSelectedImage] = useState<VisitedLocation | null>(
     null,
   );
-  const { clickedStates, setClickedStates } = useMapState();
+  const {
+    visitedStates,
+    setVisitedStates,
+    visitedLocations,
+    setVisitedLocations,
+  } = useMapState();
   const { isAuthenticated } = useAuth();
   const apiClient = useApiClient();
   const mapRef = useRef<MapRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const map = mapRef.current;
+
     // Cleanup function to remove the map when component unmounts
     return () => {
-      if (mapRef.current) {
-        mapRef.current._removed = true; // Mark the map as removed to prevent memory leaks
+      if (map) {
+        map._removed = true; // Mark the map as removed to prevent memory leaks
       }
     };
   }, []);
@@ -175,7 +171,7 @@ export function USMap() {
   // Fetch the user's images from the API whenever they become authenticated
   useEffect(() => {
     if (!isAuthenticated || !apiClient) {
-      setApiImageLocations([]);
+      setVisitedLocations([]);
       return;
     }
 
@@ -184,13 +180,13 @@ export function USMap() {
       .then(({ images }) => {
         const locations = images
           .map(toApiImageLocation)
-          .filter((location): location is ImageLocation => location !== null);
-        setApiImageLocations(locations);
+          .filter((location): location is VisitedLocation => location !== null);
+        setVisitedLocations(locations);
       })
       .catch((err) => {
         console.error("Failed to load images from API:", err);
       });
-  }, [isAuthenticated, apiClient]);
+  }, [isAuthenticated, apiClient, setVisitedLocations]);
 
   const getStateFromCoordinates = useCallback(
     async (lat: number, lng: number): Promise<string | null> => {
@@ -224,31 +220,37 @@ export function USMap() {
     [],
   );
 
-  const handleStateClick = useCallback(
-    (e: any) => {
-      if (!e.features || e.features.length === 0) return;
+  useEffect(() => {
+    let isCancelled = false;
 
-      const feature = e.features[0];
-      if (!feature) return;
+    if (visitedLocations.length === 0) {
+      setVisitedStates(new Set());
+      return;
+    }
 
-      // Only handle state clicks (not counties)
-      if (feature.layer?.id !== "us-state-fills") return;
+    Promise.all(
+      visitedLocations.map(async (location) =>
+        getStateFromCoordinates(location.lat, location.lng),
+      ),
+    )
+      .then((stateNames) => {
+        if (isCancelled) return;
 
-      const stateName = feature.properties?.STATE_NAME;
-      if (stateName) {
-        setClickedStates((prev) => {
-          const newSet = new Set(prev);
-          if (newSet.has(stateName)) {
-            newSet.delete(stateName);
-          } else {
-            newSet.add(stateName);
-          }
-          return newSet;
-        });
-      }
-    },
-    [setClickedStates],
-  );
+        const nextVisitedStates = new Set(
+          stateNames.filter((stateName): stateName is string =>
+            Boolean(stateName),
+          ),
+        );
+        setVisitedStates(nextVisitedStates);
+      })
+      .catch((error) => {
+        console.error("Failed to derive visited states from locations:", error);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [getStateFromCoordinates, setVisitedStates, visitedLocations]);
 
   const handleStateDoubleClick = useCallback((e: any) => {
     if (!e.features || e.features.length === 0 || !mapRef.current) return;
@@ -406,7 +408,7 @@ export function USMap() {
               let exifDict: Record<string, any>;
               try {
                 exifDict = piexif.load(binary);
-              } catch (e) {
+              } catch {
                 console.warn(`${file.name} has no EXIF data or corrupted EXIF`);
                 return;
               }
@@ -446,16 +448,6 @@ export function USMap() {
                       },
                       file,
                     );
-
-                    const { images } = await apiClient.getImages();
-                    setApiImageLocations(
-                      images
-                        .map(toApiImageLocation)
-                        .filter(
-                          (location): location is ImageLocation =>
-                            location !== null,
-                        ),
-                    );
                   } catch (uploadError) {
                     console.error(
                       `Failed to upload ${file.name}:`,
@@ -464,36 +456,17 @@ export function USMap() {
                   }
                 }
 
-                // Extract the state from the coordinates using Mapbox Geocoding API
-                getStateFromCoordinates(coords.lat, coords.lng).then(
-                  (stateName) => {
-                    if (stateName) {
-                      console.log(`Image from state: ${stateName}`);
-                      // Add the state to clicked states
-                      setClickedStates((prev) => {
-                        const newSet = new Set(prev);
-                        newSet.add(stateName);
-                        return newSet;
-                      });
-                    } else {
-                      console.warn(
-                        `Could not determine state for coordinates: ${coords.lat}, ${coords.lng}`,
-                      );
-                    }
-                  },
-                );
-
                 // Create a data URL from the image file for display in modal
                 const imageReader = new FileReader();
                 imageReader.onload = (imageEvent) => {
-                  const location: ImageLocation = {
+                  const location: VisitedLocation = {
                     lat: coords.lat,
                     lng: coords.lng,
                     filename: file.name,
                     dataUrl: (imageEvent.target?.result as string) ?? undefined,
                   };
 
-                  setImageLocations((prev) => [...prev, location]);
+                  setVisitedLocations((prev) => [...prev, location]);
                 };
                 imageReader.readAsDataURL(file);
               } else {
@@ -514,13 +487,7 @@ export function USMap() {
         fileInputRef.current.value = "";
       }
     },
-    [
-      apiClient,
-      getStateFromCoordinates,
-      isAuthenticated,
-      setClickedStates,
-      setApiImageLocations,
-    ],
+    [apiClient, isAuthenticated, setVisitedLocations],
   );
 
   const handleAddImages = useCallback(() => {
@@ -561,10 +528,7 @@ export function USMap() {
           setHoveredStateId(null);
           setHoveredCountyId(null);
         }}
-        onClick={(e) => {
-          handleStateClick(e);
-          handleCountyClick(e);
-        }}
+        onClick={handleCountyClick}
         onDblClick={handleStateDoubleClick}
         cursor={hoveredStateId || hoveredCountyId ? "pointer" : "grab"}
       >
@@ -578,17 +542,28 @@ export function USMap() {
             type="fill"
             source="us-states"
             paint={{
-              "fill-color": "#627BC1",
-              "fill-opacity": [
+              "fill-color": [
                 "case",
+                ["==", ["get", "STATE_NAME"], hoveredStateId ?? ""],
+                "#AFC0EA",
                 [
                   "in",
                   ["get", "STATE_NAME"],
-                  ["literal", Array.from(clickedStates)],
+                  ["literal", Array.from(visitedStates)],
                 ],
-                0.3,
+                "#627BC1",
+                "#627BC1",
+              ],
+              "fill-opacity": [
+                "case",
                 ["==", ["get", "STATE_NAME"], hoveredStateId ?? ""],
-                0.3,
+                0.48,
+                [
+                  "in",
+                  ["get", "STATE_NAME"],
+                  ["literal", Array.from(visitedStates)],
+                ],
+                0.32,
                 0.0,
               ],
             }}
@@ -638,8 +613,8 @@ export function USMap() {
           />
         </Source>
 
-        {/* Image location markers (local uploads + API images) */}
-        {[...apiImageLocations, ...imageLocations].map((location, index) => (
+        {/* Image location markers */}
+        {visitedLocations.map((location, index) => (
           <Marker
             key={`image-marker-${index}`}
             longitude={location.lng}
