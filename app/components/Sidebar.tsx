@@ -7,52 +7,75 @@ import { useAuth } from "../../lib/auth/useAuth";
 import { useMapState } from "./MapStateContext";
 
 const SidebarWrapper = styled.div(() => ({
-  width: "250px",
-  height: "100vh",
-  backgroundColor: "#f8f9fa",
-  borderRight: "1px solid #ddd",
+  width: "100%",
+  height: "56px",
+  backgroundColor: "rgba(248, 249, 250, 0.98)",
+  borderBottom: "1px solid #ddd",
   display: "flex",
-  flexDirection: "column",
+  flexDirection: "row",
+  alignItems: "stretch",
   position: "fixed",
   left: 0,
   top: 0,
+  right: 0,
   zIndex: 100,
+  backdropFilter: "blur(6px)",
 }));
 
 const Logo = styled.div(() => ({
-  padding: "24px 20px",
+  display: "flex",
+  alignItems: "center",
+  padding: "0 12px",
   fontWeight: "700",
-  fontSize: "24px",
-  borderBottom: "1px solid #ddd",
+  fontSize: "16px",
+  borderRight: "1px solid #ddd",
+  whiteSpace: "nowrap",
 }));
 
 const NavSection = styled.nav(() => ({
   flex: 1,
-  overflowY: "auto",
-  padding: "16px 0",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 }));
 
 const NavItemWrapper = styled.div(() => ({
-  position: "relative",
+  width: "100%",
+  height: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 }));
 
 const NavItem = styled.a<{ $isActive: boolean }>(({ $isActive }) => ({
   display: "block",
-  padding: "12px 20px",
+  padding: "6px 12px",
   textDecoration: "none",
   color: "inherit",
   fontWeight: $isActive ? "700" : "600",
-  backgroundColor: $isActive ? "#e9ecef" : "transparent",
-  borderLeft: $isActive ? "3px solid #627BC1" : "3px solid transparent",
+  backgroundColor: $isActive ? "#dfe6f8" : "transparent",
   cursor: "pointer",
   transition: "all 0.2s ease",
+  border: "none",
+  borderRadius: "8px",
+  fontSize: "13px",
   "&:hover": {
     backgroundColor: "#e9ecef",
   },
 }));
 
 const ProgressBarContainer = styled.div(() => ({
-  padding: "8px 20px 12px 20px",
+  position: "fixed",
+  top: "62px",
+  left: "50%",
+  transform: "translateX(-50%)",
+  width: "min(360px, calc(100vw - 20px))",
+  backgroundColor: "rgba(255, 255, 255, 0.96)",
+  border: "1px solid #ddd",
+  borderRadius: "999px",
+  padding: "8px 12px",
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.12)",
+  zIndex: 101,
 }));
 
 const ProgressBarBackground = styled.div(() => ({
@@ -80,15 +103,20 @@ const ProgressText = styled.div(() => ({
 }));
 
 const UserSection = styled.div(() => ({
-  padding: "16px 20px",
-  borderTop: "1px solid #ddd",
+  borderLeft: "1px solid #ddd",
+  padding: "0 10px",
+  minWidth: "96px",
   fontSize: "14px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 }));
 
 const UserEmail = styled.div(() => ({
   fontWeight: "600",
   color: "#666",
   marginBottom: "12px",
+  display: "none",
 }));
 
 const LogoutButton = styled.button(() => ({
@@ -104,6 +132,10 @@ const LogoutButton = styled.button(() => ({
   "&:hover": {
     background: "#526aa3",
   },
+  padding: "6px 10px",
+  width: "auto",
+  fontSize: "12px",
+  whiteSpace: "nowrap",
 }));
 
 const LoginButton = styled.button(() => ({
@@ -119,6 +151,10 @@ const LoginButton = styled.button(() => ({
   "&:hover": {
     background: "#526aa3",
   },
+  padding: "6px 10px",
+  width: "auto",
+  fontSize: "12px",
+  whiteSpace: "nowrap",
 }));
 
 export function Sidebar() {

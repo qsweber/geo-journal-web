@@ -7,17 +7,17 @@ import { AuthProvider } from "../../lib/auth/AuthContext";
 import { MapStateProvider } from "../components/MapStateContext";
 
 const LayoutWrapper = styled.div(() => ({
-  display: "flex",
   width: "100%",
   height: "100vh",
   fontFamily: "Work Sans",
 }));
 
 const MainContent = styled.main(() => ({
-  marginLeft: "250px",
-  width: "calc(100% - 250px)",
+  width: "100%",
   height: "100vh",
   overflow: "auto",
+  paddingTop: "56px",
+  boxSizing: "border-box",
 }));
 
 export default function MainLayout({ children }: { children: ReactNode }) {

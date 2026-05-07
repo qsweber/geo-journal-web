@@ -38,9 +38,6 @@ const MAPBOX_TOKEN =
   "pk.eyJ1IjoicXN3ZWJlciIsImEiOiJjam5nZTZuazgwMTlkM2twYXpjYmpqeTBjIn0.viU-jQrjmOf40aONFwjQdQ";
 
 const ZoomOutButton = styled.button(() => ({
-  position: "absolute",
-  top: "20px",
-  right: "20px",
   padding: "12px 24px",
   backgroundColor: "#627BC1",
   color: "white",
@@ -57,9 +54,6 @@ const ZoomOutButton = styled.button(() => ({
 }));
 
 const AddImagesButton = styled.button(() => ({
-  position: "absolute",
-  top: "70px",
-  right: "20px",
   padding: "12px 24px",
   backgroundColor: "#627BC1",
   color: "white",
@@ -73,6 +67,17 @@ const AddImagesButton = styled.button(() => ({
   "&:hover": {
     backgroundColor: "#526aa3",
   },
+}));
+
+const ControlsDock = styled.div(() => ({
+  position: "fixed",
+  left: "50%",
+  transform: "translateX(-50%)",
+  bottom: "calc(20px + env(safe-area-inset-bottom, 0px))",
+  display: "flex",
+  flexDirection: "row",
+  gap: "10px",
+  zIndex: 10,
 }));
 
 const MapContainer = styled.div(() => ({
@@ -644,8 +649,10 @@ export function USMap() {
         ))}
       </Map>
 
-      <ZoomOutButton onClick={handleZoomOut}>Reset View</ZoomOutButton>
-      <AddImagesButton onClick={handleAddImages}>Add Images</AddImagesButton>
+      <ControlsDock>
+        <ZoomOutButton onClick={handleZoomOut}>Reset View</ZoomOutButton>
+        <AddImagesButton onClick={handleAddImages}>Add Images</AddImagesButton>
+      </ControlsDock>
       <HiddenFileInput
         ref={fileInputRef}
         type="file"
