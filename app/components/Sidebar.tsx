@@ -120,41 +120,35 @@ const UserEmail = styled.div(() => ({
 }));
 
 const LogoutButton = styled.button(() => ({
-  padding: "8px 16px",
-  width: "100%",
+  padding: "6px 10px",
+  width: "auto",
   background: "#627BC1",
   color: "white",
   border: "none",
   borderRadius: "4px",
   fontWeight: "600",
   cursor: "pointer",
-  fontSize: "14px",
+  fontSize: "12px",
+  whiteSpace: "nowrap",
   "&:hover": {
     background: "#526aa3",
   },
-  padding: "6px 10px",
-  width: "auto",
-  fontSize: "12px",
-  whiteSpace: "nowrap",
 }));
 
 const LoginButton = styled.button(() => ({
-  padding: "8px 16px",
-  width: "100%",
+  padding: "6px 10px",
+  width: "auto",
   background: "#627BC1",
   color: "white",
   border: "none",
   borderRadius: "4px",
   fontWeight: "600",
   cursor: "pointer",
-  fontSize: "14px",
+  fontSize: "12px",
+  whiteSpace: "nowrap",
   "&:hover": {
     background: "#526aa3",
   },
-  padding: "6px 10px",
-  width: "auto",
-  fontSize: "12px",
-  whiteSpace: "nowrap",
 }));
 
 export function Sidebar() {
