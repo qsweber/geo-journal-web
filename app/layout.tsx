@@ -13,16 +13,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={workSans.variable}>
       <head>
         <meta charSet="utf-8" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#000000" />
         <meta
           name="description"
-          content="A personal website template built with Next.js"
+          content="A visual travel journal mapped by location."
         />
-        <link rel="apple-touch-icon" href="/logo192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        <title>Title</title>
+        <title>Geo Journal</title>
       </head>
       <body>{children}</body>
     </html>
