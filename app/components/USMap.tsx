@@ -317,15 +317,10 @@ export function USMap() {
         if (isCancelled) return;
 
         const nextVisitedStates = new Set<string>();
-        stateNames.forEach((stateName, index) => {
-          const location = visitedLocations[index];
-          if (!location) return;
-
+        stateNames.forEach((stateName) => {
           if (stateName) {
             nextVisitedStates.add(stateName);
           }
-
-          return;
         });
         setVisitedStates(nextVisitedStates);
       })
