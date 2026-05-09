@@ -336,11 +336,7 @@ export function USMap() {
     return () => {
       isCancelled = true;
     };
-  }, [
-    getStateFromCoordinates,
-    setVisitedStates,
-    visitedLocations,
-  ]);
+  }, [getStateFromCoordinates, setVisitedStates, visitedLocations]);
 
   const handleStateDoubleClick = useCallback((e: any) => {
     if (!e.features || e.features.length === 0 || !mapRef.current) return;
@@ -750,7 +746,9 @@ export function USMap() {
           setHoveredCountyId(null);
         }}
         onClick={handleMapClick}
-        onDblClick={currentManualAssignment ? undefined : handleStateDoubleClick}
+        onDblClick={
+          currentManualAssignment ? undefined : handleStateDoubleClick
+        }
         cursor={
           currentManualAssignment || hoveredStateId || hoveredCountyId
             ? "pointer"
