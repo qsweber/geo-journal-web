@@ -67,6 +67,10 @@ const AddImagesButton = styled.button(() => ({
   "&:hover": {
     backgroundColor: "#526aa3",
   },
+  "&:disabled": {
+    cursor: "not-allowed",
+    opacity: 0.6,
+  },
 }));
 
 const ControlsDock = styled.div(() => ({
@@ -145,12 +149,68 @@ const ImageFilename = styled.p(() => ({
   fontWeight: "600",
 }));
 
+const ManualAssignPanel = styled.div(() => ({
+  position: "fixed",
+  top: "114px",
+  left: "50%",
+  transform: "translateX(-50%)",
+  backgroundColor: "rgba(255, 255, 255, 0.95)",
+  borderRadius: "8px",
+  padding: "16px 18px",
+  zIndex: 102,
+  boxShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
+  border: "1px solid #d8e0f5",
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "12px",
+  maxWidth: "min(520px, calc(100% - 24px))",
+}));
+
+const ManualAssignText = styled.p(() => ({
+  margin: 0,
+  color: "#233059",
+  fontSize: "14px",
+  lineHeight: 1.4,
+  fontWeight: 600,
+}));
+
+const SkipButton = styled.button(() => ({
+  padding: "8px 12px",
+  borderRadius: "4px",
+  border: "1px solid #627BC1",
+  backgroundColor: "white",
+  color: "#627BC1",
+  fontSize: "13px",
+  fontWeight: 600,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  "&:hover": {
+    backgroundColor: "#f3f6ff",
+  },
+}));
+
+const DisabledZoomOutButton = styled(ZoomOutButton)(() => ({
+  "&:disabled": {
+    cursor: "not-allowed",
+    opacity: 0.6,
+  },
+}));
+
+type PendingManualAssignment = {
+  file: File;
+  takenAt: string;
+  dataUrl?: string;
+  filename: string;
+};
+
 export function USMap() {
   const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
   const [hoveredCountyId, setHoveredCountyId] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<VisitedLocation | null>(
     null,
   );
+  const [activeManualAssignment, setActiveManualAssignment] =
+    useState<PendingManualAssignment | null>(null);
   const {
     visitedStates,
     setVisitedStates,
@@ -161,6 +221,21 @@ export function USMap() {
   const apiClient = useApiClient();
   const mapRef = useRef<MapRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const readFileAsDataUrl = useCallback(
+    async (file: File): Promise<string | undefined> =>
+      new Promise((resolve) => {
+        const imageReader = new FileReader();
+        imageReader.onload = (event) => {
+          resolve((event.target?.result as string) ?? undefined);
+        };
+        imageReader.onerror = () => resolve(undefined);
+        imageReader.readAsDataURL(file);
+      }),
+    [],
+  );
+
+  const currentManualAssignment = activeManualAssignment;
 
   useEffect(() => {
     const map = mapRef.current;
@@ -241,11 +316,17 @@ export function USMap() {
       .then((stateNames) => {
         if (isCancelled) return;
 
-        const nextVisitedStates = new Set(
-          stateNames.filter((stateName): stateName is string =>
-            Boolean(stateName),
-          ),
-        );
+        const nextVisitedStates = new Set<string>();
+        stateNames.forEach((stateName, index) => {
+          const location = visitedLocations[index];
+          if (!location) return;
+
+          if (stateName) {
+            nextVisitedStates.add(stateName);
+          }
+
+          return;
+        });
         setVisitedStates(nextVisitedStates);
       })
       .catch((error) => {
@@ -255,7 +336,11 @@ export function USMap() {
     return () => {
       isCancelled = true;
     };
-  }, [getStateFromCoordinates, setVisitedStates, visitedLocations]);
+  }, [
+    getStateFromCoordinates,
+    setVisitedStates,
+    visitedLocations,
+  ]);
 
   const handleStateDoubleClick = useCallback((e: any) => {
     if (!e.features || e.features.length === 0 || !mapRef.current) return;
@@ -302,7 +387,84 @@ export function USMap() {
     // You can add more functionality here, like showing details or zooming
   }, []);
 
+  const handleManualStateSelection = useCallback(
+    (e: any) => {
+      if (!currentManualAssignment) return;
+      if (!e.features || e.features.length === 0) return;
+
+      const selectedStateFeature = e.features.find(
+        (feature: any) => feature.layer?.id === "us-state-fills",
+      );
+      if (!selectedStateFeature) return;
+
+      const stateName = selectedStateFeature.properties?.STATE_NAME;
+      if (!stateName) return;
+
+      const clickLat = e.lngLat?.lat;
+      const clickLng = e.lngLat?.lng;
+      if (!Number.isFinite(clickLat) || !Number.isFinite(clickLng)) return;
+
+      const assignedLocation: VisitedLocation = {
+        lat: clickLat,
+        lng: clickLng,
+        filename: currentManualAssignment.filename,
+        dataUrl: currentManualAssignment.dataUrl,
+      };
+
+      if (isAuthenticated && apiClient) {
+        apiClient
+          .uploadImage(
+            {
+              name: currentManualAssignment.filename,
+              latitude: clickLat.toString(),
+              longitude: clickLng.toString(),
+              taken_at: currentManualAssignment.takenAt,
+            },
+            currentManualAssignment.file,
+          )
+          .catch((uploadError) => {
+            console.error(
+              `Failed to upload ${currentManualAssignment.filename}:`,
+              uploadError,
+            );
+          });
+      }
+
+      setVisitedLocations((prev) => [...prev, assignedLocation]);
+      setActiveManualAssignment(null);
+      setVisitedStates((prev) => {
+        const nextVisitedStates = new Set(prev);
+        nextVisitedStates.add(stateName);
+        return nextVisitedStates;
+      });
+    },
+    [
+      apiClient,
+      currentManualAssignment,
+      isAuthenticated,
+      setVisitedLocations,
+      setVisitedStates,
+    ],
+  );
+
+  const handleMapClick = useCallback(
+    (e: any) => {
+      if (currentManualAssignment) {
+        handleManualStateSelection(e);
+        return;
+      }
+
+      handleCountyClick(e);
+    },
+    [currentManualAssignment, handleCountyClick, handleManualStateSelection],
+  );
+
+  const handleSkipManualAssignment = useCallback(() => {
+    setActiveManualAssignment(null);
+  }, []);
+
   const handleZoomOut = useCallback(() => {
+    if (currentManualAssignment) return;
     if (!mapRef.current) return;
 
     mapRef.current.flyTo({
@@ -310,7 +472,7 @@ export function USMap() {
       zoom: 3.5,
       duration: 1000,
     });
-  }, []);
+  }, [currentManualAssignment]);
 
   const extractGPSFromExif = (
     exifData: any,
@@ -415,12 +577,30 @@ export function USMap() {
                 exifDict = piexif.load(binary);
               } catch {
                 console.warn(`${file.name} has no EXIF data or corrupted EXIF`);
+                const dataUrl = await readFileAsDataUrl(file);
+                setActiveManualAssignment({
+                  file,
+                  takenAt: Math.floor(
+                    (file.lastModified || Date.now()) / 1000,
+                  ).toString(),
+                  dataUrl,
+                  filename: file.name,
+                });
                 return;
               }
 
               const gpsData = exifDict.GPS;
               if (!gpsData || !piexif.TAGS?.GPS) {
                 console.warn(`${file.name} has no GPS data`);
+                const dataUrl = await readFileAsDataUrl(file);
+                setActiveManualAssignment({
+                  file,
+                  takenAt: Math.floor(
+                    (file.lastModified || Date.now()) / 1000,
+                  ).toString(),
+                  dataUrl,
+                  filename: file.name,
+                });
                 return;
               }
 
@@ -437,13 +617,34 @@ export function USMap() {
               if (coords) {
                 console.log(`Extracted GPS for ${file.name}:`, coords);
 
+                const takenAt = Math.floor(
+                  (file.lastModified || Date.now()) / 1000,
+                ).toString();
+
+                const location: VisitedLocation = {
+                  lat: coords.lat,
+                  lng: coords.lng,
+                  filename: file.name,
+                };
+
+                const geocodedState = await getStateFromCoordinates(
+                  coords.lat,
+                  coords.lng,
+                );
+                if (!geocodedState) {
+                  const dataUrl = await readFileAsDataUrl(file);
+                  setActiveManualAssignment({
+                    file,
+                    takenAt,
+                    dataUrl,
+                    filename: file.name,
+                  });
+                  return;
+                }
+
                 // Upload to S3 via API presign flow when authenticated.
                 if (isAuthenticated && apiClient) {
                   try {
-                    const takenAt = Math.floor(
-                      (file.lastModified || Date.now()) / 1000,
-                    ).toString();
-
                     await apiClient.uploadImage(
                       {
                         name: file.name,
@@ -461,21 +662,25 @@ export function USMap() {
                   }
                 }
 
-                // Create a data URL from the image file for display in modal
-                const imageReader = new FileReader();
-                imageReader.onload = (imageEvent) => {
-                  const location: VisitedLocation = {
-                    lat: coords.lat,
-                    lng: coords.lng,
-                    filename: file.name,
-                    dataUrl: (imageEvent.target?.result as string) ?? undefined,
-                  };
-
-                  setVisitedLocations((prev) => [...prev, location]);
-                };
-                imageReader.readAsDataURL(file);
+                const dataUrl = await readFileAsDataUrl(file);
+                setVisitedLocations((prev) => [
+                  ...prev,
+                  {
+                    ...location,
+                    dataUrl,
+                  },
+                ]);
               } else {
                 console.warn(`${file.name} has no valid GPS data`);
+                const dataUrl = await readFileAsDataUrl(file);
+                setActiveManualAssignment({
+                  file,
+                  takenAt: Math.floor(
+                    (file.lastModified || Date.now()) / 1000,
+                  ).toString(),
+                  dataUrl,
+                  filename: file.name,
+                });
               }
             } catch (error) {
               console.error(`Error processing ${file.name}:`, error);
@@ -492,12 +697,19 @@ export function USMap() {
         fileInputRef.current.value = "";
       }
     },
-    [apiClient, isAuthenticated, setVisitedLocations],
+    [
+      apiClient,
+      getStateFromCoordinates,
+      isAuthenticated,
+      readFileAsDataUrl,
+      setVisitedLocations,
+    ],
   );
 
   const handleAddImages = useCallback(() => {
+    if (currentManualAssignment) return;
     fileInputRef.current?.click();
-  }, []);
+  }, [currentManualAssignment]);
 
   return (
     <MapContainer>
@@ -514,7 +726,11 @@ export function USMap() {
         }}
         mapStyle="mapbox://styles/mapbox/light-v11"
         mapboxAccessToken={MAPBOX_TOKEN}
-        interactiveLayerIds={["us-state-fills", "us-county-fills"]}
+        interactiveLayerIds={
+          currentManualAssignment
+            ? ["us-state-fills"]
+            : ["us-state-fills", "us-county-fills"]
+        }
         onMouseMove={(e) => {
           if (!e.features || e.features.length === 0) return;
 
@@ -533,9 +749,13 @@ export function USMap() {
           setHoveredStateId(null);
           setHoveredCountyId(null);
         }}
-        onClick={handleCountyClick}
-        onDblClick={handleStateDoubleClick}
-        cursor={hoveredStateId || hoveredCountyId ? "pointer" : "grab"}
+        onClick={handleMapClick}
+        onDblClick={currentManualAssignment ? undefined : handleStateDoubleClick}
+        cursor={
+          currentManualAssignment || hoveredStateId || hoveredCountyId
+            ? "pointer"
+            : "grab"
+        }
       >
         <Source
           id="us-states"
@@ -641,7 +861,10 @@ export function USMap() {
                 fontSize: "16px",
               }}
               title={location.filename}
-              onClick={() => setSelectedImage(location)}
+              onClick={() => {
+                if (currentManualAssignment) return;
+                setSelectedImage(location);
+              }}
             >
               📸
             </div>
@@ -649,15 +872,36 @@ export function USMap() {
         ))}
       </Map>
 
+      {currentManualAssignment && (
+        <ManualAssignPanel>
+          <ManualAssignText>
+            Choose a state by clicking the map. The exact click location is what
+            will be saved and uploaded.
+          </ManualAssignText>
+          <SkipButton onClick={handleSkipManualAssignment}>Not now</SkipButton>
+        </ManualAssignPanel>
+      )}
+
       <ControlsDock>
-        <ZoomOutButton onClick={handleZoomOut}>Reset View</ZoomOutButton>
-        <AddImagesButton onClick={handleAddImages}>Add Images</AddImagesButton>
+        <DisabledZoomOutButton
+          onClick={handleZoomOut}
+          disabled={Boolean(currentManualAssignment)}
+        >
+          Reset View
+        </DisabledZoomOutButton>
+        <AddImagesButton
+          onClick={handleAddImages}
+          disabled={Boolean(currentManualAssignment)}
+        >
+          Add Images
+        </AddImagesButton>
       </ControlsDock>
       <HiddenFileInput
         ref={fileInputRef}
         type="file"
         multiple
         accept="image/*"
+        disabled={Boolean(currentManualAssignment)}
         onChange={handleImageUpload}
       />
 
