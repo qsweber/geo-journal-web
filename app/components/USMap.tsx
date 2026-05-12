@@ -10,6 +10,7 @@ import { useAuth } from "../../lib/auth/useAuth";
 import { useApiClient } from "../../lib/api/useApiClient";
 
 function toApiImageLocation(img: {
+  id: string;
   latitude: string;
   longitude: string;
   name: string;
@@ -27,6 +28,7 @@ function toApiImageLocation(img: {
   }
 
   return {
+    id: img.id,
     lat,
     lng,
     filename: img.name,
@@ -134,6 +136,21 @@ const CloseButton = styled.button(() => ({
   zIndex: 1001,
   "&:hover": {
     backgroundColor: "#526aa3",
+  },
+}));
+
+const DeleteButton = styled.button(() => ({
+  marginTop: "12px",
+  backgroundColor: "#e53e3e",
+  color: "white",
+  border: "none",
+  borderRadius: "4px",
+  padding: "8px 16px",
+  fontSize: "14px",
+  fontWeight: "600",
+  cursor: "pointer",
+  "&:hover": {
+    backgroundColor: "#c53030",
   },
 }));
 
@@ -499,6 +516,29 @@ export function USMap() {
     fileInputRef.current?.click();
   }, []);
 
+  const handleDeleteImage = useCallback(
+    async (location: VisitedLocation) => {
+      if (!location.id || !apiClient) return;
+
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${location.filename}"?`,
+      );
+      if (!confirmed) return;
+
+      try {
+        await apiClient.deleteImage(location.id);
+        setVisitedLocations((prev) => prev.filter((l) => l.id !== location.id));
+        setSelectedImage(null);
+      } catch (error) {
+        console.error("Failed to delete image:", error);
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        alert(`Failed to delete the image: ${message}`);
+      }
+    },
+    [apiClient, setVisitedLocations],
+  );
+
   return (
     <MapContainer>
       <Map
@@ -671,6 +711,11 @@ export function USMap() {
               alt={selectedImage.filename}
             />
             <ImageFilename>{selectedImage.filename}</ImageFilename>
+            {selectedImage.id && (
+              <DeleteButton onClick={() => handleDeleteImage(selectedImage)}>
+                🗑 Delete
+              </DeleteButton>
+            )}
           </ModalContent>
         </ModalOverlay>
       )}
