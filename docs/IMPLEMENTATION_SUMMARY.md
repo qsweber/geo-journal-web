@@ -260,6 +260,7 @@ This will:
 ## Dependencies Added
 
 - `amazon-cognito-identity-js@6.3.16` - AWS Cognito SDK for JavaScript
+
   - No known vulnerabilities
   - Provides authentication, token management, and session handling
 
