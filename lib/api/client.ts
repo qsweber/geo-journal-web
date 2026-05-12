@@ -165,7 +165,7 @@ export class ApiClient {
 
   /** Deletes an image uploaded by the authenticated user. */
   async deleteImage(imageId: string): Promise<void> {
-    await this.delete<void>(`/api/v0/images/${imageId}`);
+    await this.delete<void>(`/api/v0/images/${encodeURIComponent(imageId)}`);
   }
 
   /**

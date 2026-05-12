@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState } from "react";
 
 export interface VisitedLocation {
-  id?: string;
+  id: string;
   lat: number;
   lng: number;
   filename: string;
