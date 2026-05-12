@@ -10,6 +10,7 @@ export interface ApiClientConfig {
 // --- Domain types ---
 
 export interface Image {
+  id: string;
   name: string;
   latitude: string;
   longitude: string;
@@ -160,6 +161,11 @@ export class ApiClient {
   /** Returns all images uploaded by the authenticated user. */
   async getImages(): Promise<ImagesResponse> {
     return this.get<ImagesResponse>("/api/v0/images");
+  }
+
+  /** Deletes an image uploaded by the authenticated user. */
+  async deleteImage(imageId: string): Promise<void> {
+    await this.delete<void>(`/api/v0/images/${encodeURIComponent(imageId)}`);
   }
 
   /**

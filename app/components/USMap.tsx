@@ -10,6 +10,7 @@ import { useAuth } from "../../lib/auth/useAuth";
 import { useApiClient } from "../../lib/api/useApiClient";
 
 function toApiImageLocation(img: {
+  id: string;
   latitude: string;
   longitude: string;
   name: string;
@@ -27,6 +28,7 @@ function toApiImageLocation(img: {
   }
 
   return {
+    id: img.id,
     lat,
     lng,
     filename: img.name,
@@ -137,6 +139,25 @@ const CloseButton = styled.button(() => ({
   },
 }));
 
+const DeleteButton = styled.button(() => ({
+  marginTop: "12px",
+  backgroundColor: "#e53e3e",
+  color: "white",
+  border: "none",
+  borderRadius: "4px",
+  padding: "8px 16px",
+  fontSize: "14px",
+  fontWeight: "600",
+  cursor: "pointer",
+  "&:hover:not(:disabled)": {
+    backgroundColor: "#c53030",
+  },
+  "&:disabled": {
+    backgroundColor: "#fc8181",
+    cursor: "not-allowed",
+  },
+}));
+
 const ImageFilename = styled.p(() => ({
   marginTop: "16px",
   marginBottom: 0,
@@ -151,6 +172,7 @@ export function USMap() {
   const [selectedImage, setSelectedImage] = useState<VisitedLocation | null>(
     null,
   );
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     visitedStates,
     setVisitedStates,
@@ -387,19 +409,22 @@ export function USMap() {
 
   const handleImageUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!isAuthenticated || !apiClient) return;
+
       const files = e.currentTarget.files;
       if (!files) return;
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-
-        try {
+      const processFile = (file: File): Promise<boolean> =>
+        new Promise((resolve) => {
           const reader = new FileReader();
 
           reader.onload = async (event) => {
             try {
               const data = event.target?.result;
-              if (!(data instanceof ArrayBuffer)) return;
+              if (!(data instanceof ArrayBuffer)) {
+                resolve(false);
+                return;
+              }
 
               const piexif = await import("piexifjs");
 
@@ -415,12 +440,14 @@ export function USMap() {
                 exifDict = piexif.load(binary);
               } catch {
                 console.warn(`${file.name} has no EXIF data or corrupted EXIF`);
+                resolve(false);
                 return;
               }
 
               const gpsData = exifDict.GPS;
               if (!gpsData || !piexif.TAGS?.GPS) {
                 console.warn(`${file.name} has no GPS data`);
+                resolve(false);
                 return;
               }
 
@@ -434,57 +461,58 @@ export function USMap() {
               }
 
               const coords = extractGPSFromExif(gpsInfo);
-              if (coords) {
-                console.log(`Extracted GPS for ${file.name}:`, coords);
-
-                // Upload to S3 via API presign flow when authenticated.
-                if (isAuthenticated && apiClient) {
-                  try {
-                    const takenAt = Math.floor(
-                      (file.lastModified || Date.now()) / 1000,
-                    ).toString();
-
-                    await apiClient.uploadImage(
-                      {
-                        name: file.name,
-                        latitude: coords.lat.toString(),
-                        longitude: coords.lng.toString(),
-                        taken_at: takenAt,
-                      },
-                      file,
-                    );
-                  } catch (uploadError) {
-                    console.error(
-                      `Failed to upload ${file.name}:`,
-                      uploadError,
-                    );
-                  }
-                }
-
-                // Create a data URL from the image file for display in modal
-                const imageReader = new FileReader();
-                imageReader.onload = (imageEvent) => {
-                  const location: VisitedLocation = {
-                    lat: coords.lat,
-                    lng: coords.lng,
-                    filename: file.name,
-                    dataUrl: (imageEvent.target?.result as string) ?? undefined,
-                  };
-
-                  setVisitedLocations((prev) => [...prev, location]);
-                };
-                imageReader.readAsDataURL(file);
-              } else {
+              if (!coords) {
                 console.warn(`${file.name} has no valid GPS data`);
+                resolve(false);
+                return;
+              }
+
+              console.log(`Extracted GPS for ${file.name}:`, coords);
+
+              try {
+                const takenAt = Math.floor(
+                  (file.lastModified || Date.now()) / 1000,
+                ).toString();
+
+                await apiClient.uploadImage(
+                  {
+                    name: file.name,
+                    latitude: coords.lat.toString(),
+                    longitude: coords.lng.toString(),
+                    taken_at: takenAt,
+                  },
+                  file,
+                );
+                resolve(true);
+              } catch (uploadError) {
+                console.error(`Failed to upload ${file.name}:`, uploadError);
+                resolve(false);
               }
             } catch (error) {
               console.error(`Error processing ${file.name}:`, error);
+              resolve(false);
             }
           };
 
           reader.readAsArrayBuffer(file);
-        } catch (error) {
-          console.error(`Error reading ${file.name}:`, error);
+        });
+
+      const results = await Promise.all(Array.from(files).map(processFile));
+      const anyUploaded = results.some(Boolean);
+
+      if (anyUploaded) {
+        try {
+          const { images } = await apiClient.getImages();
+          const locations = images
+            .map(toApiImageLocation)
+            .filter((l): l is VisitedLocation => l !== null);
+          setVisitedLocations(locations);
+          // Sync selectedImage with refreshed data (presigned URLs may have changed)
+          setSelectedImage((prev) =>
+            prev ? (locations.find((l) => l.id === prev.id) ?? null) : null,
+          );
+        } catch (err) {
+          console.error("Failed to reload images after upload:", err);
         }
       }
 
@@ -498,6 +526,32 @@ export function USMap() {
   const handleAddImages = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
+
+  const handleDeleteImage = useCallback(
+    async (location: VisitedLocation) => {
+      if (!apiClient || !isAuthenticated) return;
+
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${location.filename}"?`,
+      );
+      if (!confirmed) return;
+
+      setIsDeleting(true);
+      try {
+        await apiClient.deleteImage(location.id);
+        setVisitedLocations((prev) => prev.filter((l) => l.id !== location.id));
+        setSelectedImage(null);
+      } catch (error) {
+        console.error("Failed to delete image:", error);
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        alert(`Failed to delete the image: ${message}`);
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [apiClient, isAuthenticated, setVisitedLocations],
+  );
 
   return (
     <MapContainer>
@@ -671,6 +725,14 @@ export function USMap() {
               alt={selectedImage.filename}
             />
             <ImageFilename>{selectedImage.filename}</ImageFilename>
+            {isAuthenticated && (
+              <DeleteButton
+                onClick={() => handleDeleteImage(selectedImage)}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting…" : "🗑 Delete"}
+              </DeleteButton>
+            )}
           </ModalContent>
         </ModalOverlay>
       )}
