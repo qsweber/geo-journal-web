@@ -27,3 +27,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# cdk
+cdk/node_modules/
+cdk/cdk.out/
