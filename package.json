@@ -15,8 +15,6 @@
     "react-map-gl": "^8.1.0"
   },
   "devDependencies": {
-    "@pulumi/aws": "6.3.0",
-    "@pulumi/pulumi": "3.226.0",
     "@types/node": "^22.5.0",
     "@types/piexifjs": "^1.0.0",
     "@types/react": "^18.2.22",

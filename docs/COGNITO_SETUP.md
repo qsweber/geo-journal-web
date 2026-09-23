@@ -5,35 +5,22 @@ This application uses AWS Cognito for user authentication. Follow these steps to
 ## Prerequisites
 
 - AWS Account
-- Pulumi CLI installed
-- AWS credentials configured
 - Node.js and npm installed
 
 ## Infrastructure Setup
 
-### 1. Deploy AWS Cognito Resources
+### 1. The Cognito User Pool lives in geo-journal, not here
 
-The infrastructure code in `infrastructure/index.ts` includes AWS Cognito User Pool and Client configuration. Deploy using Pulumi:
-
-```bash
-cd infrastructure
-pulumi up --stack dev  # or production
-```
+The Cognito User Pool and Client are created and managed by the paired
+[geo-journal](https://github.com/qsweber/geo-journal) backend's CDK stack (`cdk/cognito.go`), not
+by this repo. This repo only _consumes_ the resulting pool ID and client ID.
 
 ### 2. Get Cognito Configuration Values
 
-After deployment, Pulumi will output the following values:
-
-- `userPoolId`: The Cognito User Pool ID
-- `userPoolClientId`: The Cognito User Pool Client ID
-
-You can retrieve these values at any time with:
-
-```bash
-cd infrastructure
-pulumi stack output userPoolId
-pulumi stack output userPoolClientId
-```
+The current values for each environment are checked into `cdk/config/dev.json` and
+`cdk/config/production.json` in this repo (`userPoolId`, `userPoolClientId`), kept in sync with
+geo-journal's CDK stack outputs. If geo-journal's Cognito setup ever changes (e.g. the pool is
+recreated), update those two values here to match.
 
 ## Application Configuration
 

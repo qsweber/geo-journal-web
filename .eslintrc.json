@@ -4,6 +4,7 @@
     "es2021": true
   },
   "root": true,
+  "ignorePatterns": ["cdk/**"],
   "extends": ["eslint:recommended", "next/core-web-vitals"],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
