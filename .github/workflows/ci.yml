@@ -21,6 +21,8 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
+      GH_PACKAGES_TOKEN:
+        required: true
 
 jobs:
   test:
@@ -31,6 +33,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       - run: npm run test
       - run: npx prettier . --check
       - run: npx eslint . --ext .ts,.tsx
@@ -90,6 +94,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       - run: npm run build
         env:
           NEXT_PUBLIC_COGNITO_USER_POOL_ID: ${{ needs.infra.outputs.userPoolId }}

@@ -3,7 +3,8 @@
 import { ReactNode } from "react";
 import styled from "@emotion/styled";
 import { Sidebar } from "../components/Sidebar";
-import { AuthProvider } from "../../lib/auth/AuthContext";
+import { AuthProvider } from "@qsweber/auth-kit";
+import "../../lib/auth-setup";
 import { MapStateProvider } from "../components/MapStateContext";
 
 const LayoutWrapper = styled.div(() => ({
