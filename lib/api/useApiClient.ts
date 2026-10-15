@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "@qsweber/auth-kit";
 import { ApiClient } from "./client";
 
 /**

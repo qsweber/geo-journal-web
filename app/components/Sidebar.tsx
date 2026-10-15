@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import styled from "@emotion/styled";
-import { useAuth } from "../../lib/auth/useAuth";
+import { useAuth } from "@qsweber/auth-kit";
 import { useMapState } from "./MapStateContext";
 
 const SidebarWrapper = styled.div(() => ({
@@ -197,6 +197,9 @@ export function Sidebar() {
         ) : isAuthenticated && user ? (
           <>
             <UserEmail>{user.email}</UserEmail>
+            <Link href="/profile" passHref legacyBehavior>
+              <NavItem $isActive={pathname === "/profile"}>Profile</NavItem>
+            </Link>
             <LogoutButton onClick={handleLogout}>Log Out</LogoutButton>
           </>
         ) : (

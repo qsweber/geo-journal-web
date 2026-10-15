@@ -18,6 +18,7 @@
 # environment variables
 .env*.local
 .env
+.envrc
 
 # debug
 npm-debug.log*

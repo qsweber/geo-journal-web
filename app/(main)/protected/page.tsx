@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import styled from "@emotion/styled";
-import { useAuth } from "../../../lib/auth/useAuth";
+import { useRequireAuth } from "@qsweber/auth-kit";
 import { useApiClient } from "../../../lib/api/useApiClient";
 
 const Title = styled.h1(() => ({
@@ -66,19 +65,12 @@ const ErrorBox = styled.div(() => ({
 }));
 
 export default function ProtectedPage() {
-  const { isAuthenticated, isLoading, user } = useAuth();
-  const router = useRouter();
+  const { isAuthenticated, isLoading, user } = useRequireAuth();
   const apiClient = useApiClient();
 
   const [apiResponse, setApiResponse] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isLoadingApi, setIsLoadingApi] = useState(false);
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isAuthenticated, isLoading, router]);
 
   const callApi = async () => {
     if (!apiClient) {

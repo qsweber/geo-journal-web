@@ -6,7 +6,7 @@ import styled from "@emotion/styled";
 import "mapbox-gl/dist/mapbox-gl.css";
 import bbox from "@turf/bbox";
 import { useMapState, type VisitedLocation } from "./MapStateContext";
-import { useAuth } from "../../lib/auth/useAuth";
+import { useAuth } from "@qsweber/auth-kit";
 import { useApiClient } from "../../lib/api/useApiClient";
 
 function toApiImageLocation(img: {
